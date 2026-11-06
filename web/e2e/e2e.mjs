@@ -104,7 +104,7 @@ ok("late-night jump changes the clock", (await text("net-time")).startsWith("22:
 
 // Station -> destination -> commute map.
 await page.click("#net-play");
-await page.waitForTimeout(300);
+await page.waitForTimeout(1200); // let the paused trains settle before choosing a station with none on it
 const sp2 = await findFreeStation();
 await page.mouse.click(sp2.x, sp2.y);
 await page.waitForTimeout(600);
