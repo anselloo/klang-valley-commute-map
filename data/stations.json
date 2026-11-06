@@ -183,7 +183,7 @@
 },
 {
 "id": "S020",
-"name": "Bandaraya - Uob",
+"name": "Bandaraya - UOB",
 "lat": 3.155567,
 "lon": 101.694485,
 "lines": [
@@ -440,7 +440,7 @@
 },
 {
 "id": "S048",
-"name": "Dato' Menteri - Sa Sentral",
+"name": "Dato' Menteri - SA Sentral",
 "lat": 3.069722,
 "lon": 101.521111,
 "lines": [
@@ -505,7 +505,7 @@
 },
 {
 "id": "S055",
-"name": "Ioi Puchong Jaya",
+"name": "IOI Puchong Jaya",
 "lat": 3.048101,
 "lon": 101.62095,
 "lines": [
@@ -605,7 +605,7 @@
 },
 {
 "id": "S066",
-"name": "Kampung Baru - Cbp Coopbank Pertama",
+"name": "Kampung Baru - CBP Coopbank Pertama",
 "lat": 3.161386,
 "lon": 101.706608,
 "lines": [
@@ -733,7 +733,7 @@
 },
 {
 "id": "S080",
-"name": "Kl Sentral",
+"name": "KL Sentral",
 "lat": 3.134294,
 "lon": 101.686181,
 "lines": [
@@ -744,7 +744,7 @@
 },
 {
 "id": "S081",
-"name": "Kl Sentral",
+"name": "KL Sentral",
 "lat": 3.132852,
 "lon": 101.687817,
 "lines": [
@@ -771,7 +771,7 @@
 },
 {
 "id": "S084",
-"name": "Klcc",
+"name": "KLCC",
 "lat": 3.158935,
 "lon": 101.713287,
 "lines": [
@@ -1029,7 +1029,7 @@
 },
 {
 "id": "S112",
-"name": "Persiaran Klcc",
+"name": "Persiaran KLCC",
 "lat": 3.15712,
 "lon": 101.71834,
 "lines": [
@@ -1150,7 +1150,7 @@
 },
 {
 "id": "S125",
-"name": "Pwtc",
+"name": "PWTC",
 "lat": 3.166333,
 "lon": 101.693586,
 "lines": [
@@ -1361,7 +1361,7 @@
 },
 {
 "id": "S148",
-"name": "South Quay-Usj 1",
+"name": "South Quay-USJ 1",
 "lat": 3.0617,
 "lon": 101.5969,
 "lines": [
@@ -1424,7 +1424,7 @@
 },
 {
 "id": "S155",
-"name": "Ss 15",
+"name": "SS 15",
 "lat": 3.075972,
 "lon": 101.585983,
 "lines": [
@@ -1433,7 +1433,7 @@
 },
 {
 "id": "S156",
-"name": "Ss 18",
+"name": "SS 18",
 "lat": 3.067182,
 "lon": 101.585945,
 "lines": [
@@ -1773,7 +1773,7 @@
 },
 {
 "id": "S193",
-"name": "Ukm",
+"name": "UKM",
 "lat": 2.939775,
 "lon": 101.787623,
 "lines": [
@@ -1791,7 +1791,7 @@
 },
 {
 "id": "S195",
-"name": "Upm",
+"name": "UPM",
 "lat": 3.008489,
 "lon": 101.705396,
 "lines": [
@@ -1800,7 +1800,7 @@
 },
 {
 "id": "S196",
-"name": "Usj 21",
+"name": "USJ 21",
 "lat": 3.029881,
 "lon": 101.581711,
 "lines": [
@@ -1809,7 +1809,7 @@
 },
 {
 "id": "S197",
-"name": "Usj7",
+"name": "USJ7",
 "lat": 3.055128,
 "lon": 101.592047,
 "lines": [

@@ -11,6 +11,14 @@
     <div id="map"></div>
     <aside id="panel">
       <h1>Klang Valley commute map</h1>
+      <form id="search" autocomplete="off">
+        <input id="search-input" type="search" placeholder="Search your office or campus" aria-label="Search for a destination" />
+        <button type="submit">Go</button>
+      </form>
+      <div id="arrival" role="group" aria-label="Arrival time (weekday)">
+        <button type="button" data-window="0800" class="on" aria-pressed="true">Arrive 8:00 am</button>
+        <button type="button" data-window="0900" aria-pressed="false">Arrive 9:00 am</button>
+      </div>
       <p id="hint">Click the map where you work or study. Shading shows door-to-door train travel time to it.</p>
       <ul id="legend"></ul>
       <p id="status"></p>

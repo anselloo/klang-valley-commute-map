@@ -7,15 +7,42 @@ body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; co
   background: rgba(255, 255, 255, 0.95); border-radius: 8px;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
 }
-#panel h1 { margin: 0 0 6px; font-size: 16px; }
-#panel p { margin: 6px 0; font-size: 13px; line-height: 1.35; }
+#panel h1 { margin: 0 0 8px; font-size: 16px; }
+#panel p { margin: 8px 0 6px; font-size: 13px; line-height: 1.35; }
 #status { color: #5b6672; font-size: 12px !important; min-height: 1em; }
+
+#search { display: flex; gap: 6px; }
+#search input {
+  flex: 1; min-width: 0; padding: 6px 8px; font-size: 14px;
+  border: 1px solid #b8c0c8; border-radius: 6px;
+}
+button {
+  font: inherit; font-size: 13px; padding: 6px 10px; cursor: pointer;
+  border: 1px solid #b8c0c8; border-radius: 6px; background: #f4f6f8; color: inherit;
+}
+button:hover { background: #e8ecf0; }
+
+#arrival { display: flex; margin-top: 8px; }
+#arrival button { flex: 1; border-radius: 0; }
+#arrival button:first-child { border-radius: 6px 0 0 6px; }
+#arrival button:last-child { border-radius: 0 6px 6px 0; border-left: 0; }
+#arrival button.on { background: #0b5394; border-color: #0b5394; color: #fff; }
+
 #legend { list-style: none; margin: 8px 0 0; padding: 0; font-size: 13px; }
 #legend li { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
 #legend .swatch { width: 18px; height: 12px; border-radius: 2px; flex: none; }
 
+.maplibregl-popup-content { font-size: 13px; max-width: 330px; padding: 10px 12px; }
+.breakdown { border-collapse: collapse; width: 100%; }
+.breakdown td { padding: 2px 0; vertical-align: top; }
+.breakdown td.t { text-align: right; white-space: nowrap; padding-left: 12px; font-variant-numeric: tabular-nums; }
+.breakdown tr.total td { border-top: 1px solid #c8ced4; padding-top: 4px; font-weight: 600; }
+.popup-actions { margin-top: 8px; }
+.popup-note { color: #5b6672; font-size: 12px; margin-top: 6px; }
+
 @media (max-width: 600px) {
   #panel { padding: 8px 10px; }
-  #panel h1 { font-size: 14px; }
+  #panel h1 { font-size: 14px; margin-bottom: 6px; }
   #panel p { font-size: 12px; }
+  #legend { font-size: 12px; }
 }

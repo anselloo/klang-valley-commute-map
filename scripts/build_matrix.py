@@ -2,10 +2,16 @@
 """Milestone 2: build station-to-station travel times.
 
 Reads the cached GTFS feeds (see gtfs_check.py), and writes
-  data/stations.json  - id, name, lat, lon, lines
-  data/matrix.json    - minutes between every pair of stations (null = unreachable)
+  data/stations.json         - id, name, lat, lon, lines
+  data/matrix-<window>.json  - minutes between every pair of stations (null = unreachable)
+  data/graph-<window>.json   - compact line graph, so the browser can rebuild the route
+                               for a single trip (used for the breakdown popup)
 
-Cost model for a weekday 7:00-9:00 departure window:
+Two departure windows are built, one per arrival-time option in the UI:
+  0800  depart 6:00-8:00 (arrive around 8:00)
+  0900  depart 7:00-9:00 (arrive around 9:00)
+
+Cost model for a departure window:
   * in-vehicle time from stop_times
   * initial wait   = half the average headway of the line in the window
   * transfer       = half the headway of the next line + 5 min penalty
@@ -29,7 +35,9 @@ import gtfs_check as g
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 
-WINDOW_START, WINDOW_END = 7 * 60, 9 * 60  # minutes after midnight
+# Departure windows in minutes after midnight, keyed by the arrival time they serve.
+WINDOWS = {"0800": (6 * 60, 8 * 60), "0900": (7 * 60, 9 * 60)}
+FALLBACK_PAD = 60  # stops with no departure in the window use the window padded by this much
 TRANSFER_PENALTY = 5.0
 
 
@@ -38,7 +46,7 @@ def to_min(t):
     return h * 60 + m + s / 60
 
 
-def line_data(feed, zf, route_filter):
+def line_data(feed, zf, route_filter, window):
     """Extract line edges and headways for one feed.
 
     Returns (route_names, edges, headway, stop_rows) where
@@ -46,6 +54,7 @@ def line_data(feed, zf, route_filter):
       headway[(rkey, dir, stop)]           -> average headway in minutes
     Stop ids are prefixed with the feed name.
     """
+    window_start, window_end = window
     routes = {r["route_id"]: r for r in g.read_table(zf, "routes.txt") if route_filter(r)}
     services, _ = g.weekday_services(g.read_table(zf, "calendar.txt"))
     trips = {
@@ -67,6 +76,7 @@ def line_data(feed, zf, route_filter):
     names = {f"{feed}:{rid}": r["route_short_name"] for rid, r in routes.items()}
     edge_samples = defaultdict(lambda: defaultdict(lambda: ([], [])))  # in-window, all
     dep_counts = defaultdict(int)
+    dep_counts_wide = defaultdict(int)
     freq_headway = {}
 
     for trip_id, trip in trips.items():
@@ -76,29 +86,36 @@ def line_data(feed, zf, route_filter):
         for a, b in zip(rows, rows[1:]):
             sa, sb = f"{feed}:{a['stop_id']}", f"{feed}:{b['stop_id']}"
             dur = to_min(b["arrival_time"]) - to_min(a["arrival_time"])
-            in_win = WINDOW_START - 30 <= to_min(a["departure_time"]) <= WINDOW_END + 30
+            in_win = window_start - 30 <= to_min(a["departure_time"]) <= window_end + 30
             edge_samples[line][(sa, sb)][0 if in_win else 1].append(dur)
         if trip_id in freqs:
             # Frequency-based trip: expected trains per window = sum(overlap / headway).
             trains = 0.0
             for f in freqs[trip_id]:
-                lo = max(WINDOW_START, to_min(f["start_time"]))
-                hi = min(WINDOW_END, to_min(f["end_time"]))
+                lo = max(window_start, to_min(f["start_time"]))
+                hi = min(window_end, to_min(f["end_time"]))
                 if hi > lo:
                     trains += (hi - lo) / (float(f["headway_secs"]) / 60)
             if trains:
                 for r in rows:
                     freq_headway[(rkey, direction, f"{feed}:{r['stop_id']}")] = (
-                        (WINDOW_END - WINDOW_START) / trains
+                        (window_end - window_start) / trains
                     )
         else:
             for r in rows:
-                if WINDOW_START <= to_min(r["departure_time"]) < WINDOW_END:
-                    dep_counts[(rkey, direction, f"{feed}:{r['stop_id']}")] += 1
+                key = (rkey, direction, f"{feed}:{r['stop_id']}")
+                dep = to_min(r["departure_time"])
+                if window_start <= dep < window_end:
+                    dep_counts[key] += 1
+                if window_start - FALLBACK_PAD <= dep < window_end + FALLBACK_PAD:
+                    dep_counts_wide[key] += 1
 
     headway = dict(freq_headway)
     for key, n in dep_counts.items():
-        headway[key] = (WINDOW_END - WINDOW_START) / n
+        headway[key] = (window_end - window_start) / n
+    for key, n in dep_counts_wide.items():
+        if key not in headway:
+            headway[key] = (window_end - window_start + 2 * FALLBACK_PAD) / n
 
     edges = defaultdict(dict)
     for line, pairs in edge_samples.items():
@@ -131,6 +148,18 @@ def clean_name(name):
     return re.sub(r"\s*-\s*REDONE$", "", name.strip())
 
 
+ACRONYMS = {"KL", "KLCC", "PWTC", "USJ", "SS", "UKM", "UPM", "UOB", "IOI", "CBP", "SA", "TTDI"}
+
+
+def display_name(name):
+    """Title-case a station name but keep known acronyms upper-case (KL Sentral, not Kl Sentral)."""
+    return re.sub(
+        r"[A-Za-z']+",
+        lambda m: m.group(0).upper() if m.group(0).upper() in ACRONYMS else m.group(0).title(),
+        name,
+    )
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--refresh", action="store_true", help="re-download the feeds")
@@ -138,14 +167,19 @@ def main():
     for url, dest in g.FEEDS.values():
         g.download(url, dest, args.refresh)
 
-    route_names, edges, headway, stop_rows = {}, {}, {}, {}
-    for feed, filt in (("prasarana", g.prasarana_filter), ("ktmb", g.ktmb_filter)):
-        with zipfile.ZipFile(g.FEEDS[feed][1]) as zf:
-            n, e, h, s = line_data(feed, zf, filt)
-        route_names.update(n)
-        edges.update(e)
-        headway.update(h)
-        stop_rows.update(s)
+    route_names, stop_rows = {}, {}
+    per_window = {}  # label -> (edges, headway)
+    for label, window in WINDOWS.items():
+        edges, headway = {}, {}
+        for feed, filt in (("prasarana", g.prasarana_filter), ("ktmb", g.ktmb_filter)):
+            with zipfile.ZipFile(g.FEEDS[feed][1]) as zf:
+                n, e, h, s = line_data(feed, zf, filt, window)
+            route_names.update(n)
+            edges.update(e)
+            headway.update(h)
+            stop_rows.update(s)
+        per_window[label] = (edges, headway)
+    edges = per_window["0800"][0]  # same stop set in every window
 
     # Keep only Klang Valley stops that appear on a line edge.
     used = {s for pairs in edges.values() for pair in pairs for s in pair}
@@ -173,7 +207,7 @@ def main():
         ss = members[c]
         stations.append({
             "id": f"S{index[c]:03d}",
-            "name": min((clean_name(stop_rows[s]["stop_name"]) for s in ss), key=len).title(),
+            "name": display_name(min((clean_name(stop_rows[s]["stop_name"]) for s in ss), key=len)),
             "lat": round(sum(float(stop_rows[s]["stop_lat"]) for s in ss) / len(ss), 6),
             "lon": round(sum(float(stop_rows[s]["stop_lon"]) for s in ss) / len(ss), 6),
             "lines": sorted(lines_at[c]),
@@ -181,86 +215,113 @@ def main():
     station_of = {s: index[c] for s, c in cluster_of.items()}
     n = len(stations)
 
-    # Graph. Nodes: ("T", st) arrived by train, ("W", st) arrived on foot,
-    # ("L", rkey, dir, stop) on a vehicle.
-    ride = defaultdict(list)    # line node -> [(line node, minutes)]
-    board = defaultdict(list)   # station -> [(line node, headway)]
-    for (rkey, d), pairs in edges.items():
-        for (a, b), dur in pairs.items():
-            if a in valley and b in valley and dur > 0:
-                ride[("L", rkey, d, a)].append((("L", rkey, d, b), dur))
-        for stop in {s for pair in pairs for s in pair}:
-            hw = headway.get((rkey, d, stop))
-            if stop in valley and hw:
-                board[station_of[stop]].append((("L", rkey, d, stop), hw))
+    def solve(edges, headway):
+        """Build the graph for one window; return (matrix, graph export)."""
+        # Graph. Nodes: ("T", st) arrived by train, ("W", st) arrived on foot,
+        # ("L", rkey, dir, stop) on a vehicle.
+        ride = defaultdict(list)    # line node -> [(line node, minutes)]
+        board = defaultdict(list)   # station -> [(line node, headway)]
+        for (rkey, d), pairs in edges.items():
+            for (a, b), dur in pairs.items():
+                if a in valley and b in valley and dur > 0:
+                    ride[("L", rkey, d, a)].append((("L", rkey, d, b), dur))
+            for stop in {s for pair in pairs for s in pair}:
+                hw = headway.get((rkey, d, stop))
+                if stop in valley and hw:
+                    board[station_of[stop]].append((("L", rkey, d, stop), hw))
 
-    walk = defaultdict(list)
-    transfers = json.loads((DATA_DIR / "transfers.json").read_text(encoding="utf-8"))["transfers"]
-    for t in transfers:
-        for key in (t["from"], t["to"]):
-            if key not in station_of:
-                sys.exit(f"transfers.json: unknown or out-of-valley stop {key}")
-        a, b = station_of[t["from"]], station_of[t["to"]]
-        if a != b:
-            walk[a].append((b, t["walk_min"]))
-            walk[b].append((a, t["walk_min"]))
+        walk = defaultdict(list)
+        transfers = json.loads((DATA_DIR / "transfers.json").read_text(encoding="utf-8"))["transfers"]
+        for t in transfers:
+            for key in (t["from"], t["to"]):
+                if key not in station_of:
+                    sys.exit(f"transfers.json: unknown or out-of-valley stop {key}")
+            a, b = station_of[t["from"]], station_of[t["to"]]
+            if a != b:
+                walk[a].append((b, t["walk_min"]))
+                walk[b].append((a, t["walk_min"]))
 
-    def dijkstra(src):
-        dist = {}
-        heap = [(0.0, ("W", src))]
-        # Walking transfers out of the origin cost walk time, with no extra penalty.
-        for other, w in walk[src]:
-            heap.append((float(w), ("W", other)))
-        heapq.heapify(heap)
-        while heap:
-            d, node = heapq.heappop(heap)
-            if node in dist:
-                continue
-            dist[node] = d
-            kind = node[0]
-            if kind in ("T", "W"):
-                st = node[1]
-                extra = TRANSFER_PENALTY if kind == "T" else 0.0
-                for ln, hw in board[st]:
-                    heapq.heappush(heap, (d + hw / 2 + extra, ln))
-                if kind == "T":
-                    for other, w in walk[st]:
-                        heapq.heappush(heap, (d + w, ("W", other)))
-            else:
-                for nxt, dur in ride[node]:
-                    heapq.heappush(heap, (d + dur, nxt))
-                heapq.heappush(heap, (d, ("T", station_of[node[3]])))
-        return dist
+        def dijkstra(src):
+            dist = {}
+            heap = [(0.0, ("W", src))]
+            # Walking transfers out of the origin cost walk time, with no extra penalty.
+            for other, w in walk[src]:
+                heap.append((float(w), ("W", other)))
+            heapq.heapify(heap)
+            while heap:
+                d, node = heapq.heappop(heap)
+                if node in dist:
+                    continue
+                dist[node] = d
+                kind = node[0]
+                if kind in ("T", "W"):
+                    st = node[1]
+                    extra = TRANSFER_PENALTY if kind == "T" else 0.0
+                    for ln, hw in board[st]:
+                        heapq.heappush(heap, (d + hw / 2 + extra, ln))
+                    if kind == "T":
+                        for other, w in walk[st]:
+                            heapq.heappush(heap, (d + w, ("W", other)))
+                else:
+                    for nxt, dur in ride[node]:
+                        heapq.heappush(heap, (d + dur, nxt))
+                    heapq.heappush(heap, (d, ("T", station_of[node[3]])))
+            return dist
 
-    matrix = []
-    for src in range(n):
-        dist = dijkstra(src)
-        row = []
-        for dst in range(n):
-            if dst == src:
-                row.append(0)
-                continue
-            best = min(dist.get(("T", dst), float("inf")), dist.get(("W", dst), float("inf")))
-            row.append(None if best == float("inf") else round(best, 1))
-        matrix.append(row)
+        matrix = []
+        for src in range(n):
+            dist = dijkstra(src)
+            row = []
+            for dst in range(n):
+                if dst == src:
+                    row.append(0)
+                    continue
+                best = min(dist.get(("T", dst), float("inf")), dist.get(("W", dst), float("inf")))
+                row.append(None if best == float("inf") else round(best, 1))
+            matrix.append(row)
+
+        # Compact export for the browser: nodes are line nodes, indexed in sorted order.
+        node_keys = sorted({k for k in ride} | {t for ts in ride.values() for t, _ in ts}
+                           | {ln for lns in board.values() for ln, _ in lns})
+        node_id = {k: i for i, k in enumerate(node_keys)}
+        hw_of = {ln: hw for lns in board.values() for ln, hw in lns}
+        line_names = sorted(set(route_names.values()))
+        graph = {
+            "penalty": TRANSFER_PENALTY,
+            "lines": line_names,
+            "nodes": [[station_of[k[3]], line_names.index(route_names[k[1]]),
+                       round(hw_of.get(k, 0), 2)] for k in node_keys],
+            "rides": [[node_id[a], node_id[b], round(dur, 2)]
+                      for a, outs in sorted(ride.items()) for b, dur in outs],
+            "walks": sorted({(min(a, b), max(a, b), w) for a, ws in walk.items() for b, w in ws}),
+        }
+        return matrix, graph
 
     DATA_DIR.mkdir(exist_ok=True)
     (DATA_DIR / "stations.json").write_text(
         json.dumps(stations, ensure_ascii=False, indent=0), encoding="utf-8")
-    (DATA_DIR / "matrix.json").write_text(
-        json.dumps(matrix, separators=(",", ":")), encoding="utf-8")
+    for stale in ("matrix.json",):
+        (DATA_DIR / stale).unlink(missing_ok=True)
 
-    unreachable = sum(1 for r in matrix for v in r if v is None)
-    print(f"{n} stations, {n * n - n} ordered pairs, {unreachable} unreachable")
-    if unreachable:
-        comp = defaultdict(list)
-        for i, row in enumerate(matrix):
-            comp[tuple(j for j, v in enumerate(row) if v is not None)].append(stations[i]["name"])
-        for reach, names in sorted(comp.items(), key=lambda kv: len(kv[0])):
-            if len(reach) < n - 1:
-                print(f"  isolated group reaching {len(reach)} stations: {', '.join(names[:8])}")
-    print(f"Wrote {DATA_DIR / 'stations.json'} and {DATA_DIR / 'matrix.json'} "
-          f"({(DATA_DIR / 'matrix.json').stat().st_size // 1024} KB)")
+    matrices = {}
+    for label, (w_edges, w_headway) in per_window.items():
+        matrix, graph = solve(w_edges, w_headway)
+        matrices[label] = matrix
+        (DATA_DIR / f"matrix-{label}.json").write_text(
+            json.dumps(matrix, separators=(",", ":")), encoding="utf-8")
+        (DATA_DIR / f"graph-{label}.json").write_text(
+            json.dumps(graph, separators=(",", ":")), encoding="utf-8")
+        unreachable = sum(1 for r in matrix for v in r if v is None)
+        size = ((DATA_DIR / f"matrix-{label}.json").stat().st_size
+                + (DATA_DIR / f"graph-{label}.json").stat().st_size) // 1024
+        print(f"[{label}] {n} stations, {n * n - n} ordered pairs, {unreachable} unreachable, {size} KB")
+        if unreachable:
+            comp = defaultdict(list)
+            for i, row in enumerate(matrix):
+                comp[tuple(j for j, v in enumerate(row) if v is not None)].append(stations[i]["name"])
+            for reach, names in sorted(comp.items(), key=lambda kv: len(kv[0])):
+                if len(reach) < n - 1:
+                    print(f"  isolated group reaching {len(reach)} stations: {', '.join(names[:8])}")
 
     checks = [
         ("Kl Sentral", "Klcc"), ("Kl Sentral", "Kajang"), ("Klcc", "Bukit Bintang"),
@@ -274,15 +335,15 @@ def main():
         return [i for i, s in enumerate(stations) if s["name"].lower() == name.lower()]
 
     print("\nSpot-check candidates (minutes from station to station incl. waits;")
-    print("min over same-named stations):")
+    print("min over same-named stations; arrive 8:00 / arrive 9:00):")
     for a, b in checks:
         ia, ib = by_name(a), by_name(b)
         if not ia or not ib:
             print(f"  {a} -> {b}: station name not found")
             continue
-        fwd = min(matrix[i][j] for i in ia for j in ib if matrix[i][j] is not None)
-        rev = min(matrix[j][i] for i in ia for j in ib if matrix[j][i] is not None)
-        print(f"  {a} -> {b}: {fwd}  (reverse {rev})")
+        vals = [min(m[i][j] for i in ia for j in ib if m[i][j] is not None)
+                for m in matrices.values()]
+        print(f"  {a} -> {b}: {vals[0]} / {vals[1]}")
 
 
 if __name__ == "__main__":
