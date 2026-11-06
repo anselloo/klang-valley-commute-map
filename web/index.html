@@ -7,56 +7,105 @@
     <link rel="preload" href="./data/stations.json" as="fetch" crossorigin />
     <link rel="preload" href="./data/matrix.json" as="fetch" crossorigin />
     <title>Where can I live? Klang Valley commute map</title>
-    <meta name="description" content="See which parts of the Klang Valley are within 30, 45 or 60 minutes by train of your office or campus." />
+    <meta name="description" content="See which parts of the Klang Valley are within 30, 45 or 60 minutes by train of your office or campus, and watch the trains run." />
   </head>
   <body>
     <div id="map"></div>
-    <aside id="panel" aria-label="Commute controls">
+    <aside id="panel" aria-label="Controls">
       <header id="panel-head">
-        <div>
+        <div id="head-text">
           <h1>Where can I live?</h1>
           <p id="summary">Loading…</p>
           <ul id="mini-legend" aria-hidden="true"></ul>
           <p id="peek"></p>
         </div>
-        <button type="button" id="collapse" aria-expanded="true" aria-controls="panel-body">Hide</button>
+        <div id="head-buttons">
+          <button type="button" id="head-play" class="icon" aria-label="Pause trains" hidden>❚❚</button>
+          <button type="button" id="collapse" aria-expanded="true" aria-controls="panel-body">Hide</button>
+        </div>
       </header>
 
+      <div id="modes" role="tablist" aria-label="View">
+        <button type="button" role="tab" data-mode="commute" class="on" aria-selected="true">Commute map</button>
+        <button type="button" role="tab" data-mode="network" aria-selected="false">Train network</button>
+      </div>
+
       <div id="panel-body">
-        <p id="lede">
-          Pick where you work or study. The map colours every area by how long the train
-          journey to it takes on a weekday morning, door to door.
-        </p>
-
-        <section>
-          <h2><span class="n">1</span> Where do you work or study?</h2>
-          <form id="search" autocomplete="off">
-            <input id="search-input" type="search" placeholder="Search a place or address" aria-label="Search for a place or address" />
-            <button type="submit">Search</button>
-          </form>
-          <div id="chips" aria-label="Quick picks"></div>
-          <button type="button" id="pick">Or pick a spot on the map</button>
-        </section>
-
-        <section>
-          <h2><span class="n">2</span> Read the map</h2>
-          <p class="small" id="legend-title">Time from each area to your destination:</p>
-          <ul id="legend"></ul>
-          <p class="small">
-            <strong>Tap a coloured area</strong> to see the trip: walk, train, changes.
-            Uncoloured areas have no station within a 1.5 km walk.
+        <div id="mode-commute">
+          <p id="lede">
+            Pick where you work or study. The map colours every area by how long the train
+            journey to it takes on a weekday morning, door to door.
           </p>
-        </section>
 
-        <details>
-          <summary>How is this calculated?</summary>
-          <p class="small">
-            Train times come from the official LRT, MRT, Monorail, BRT and KTM Komuter
-            timetables. Waiting is half the average gap between trains, each change adds
-            5 minutes, and walking is estimated at 4.5 km/h in a straight line plus 30%.
-            Buses and e-hailing are not included, so treat results as a guide.
+          <section>
+            <h2><span class="n">1</span> Where do you work or study?</h2>
+            <form id="search" autocomplete="off">
+              <input id="search-input" type="search" placeholder="Search a place or address" aria-label="Search for a place or address" />
+              <button type="submit">Search</button>
+            </form>
+            <div id="chips" aria-label="Quick picks"></div>
+            <button type="button" id="pick">Or pick a spot on the map</button>
+          </section>
+
+          <section>
+            <h2><span class="n">2</span> Read the map</h2>
+            <p class="small" id="legend-title">Time from each area to your destination:</p>
+            <ul id="legend"></ul>
+            <p class="small">
+              <strong>Tap a coloured area</strong> to see the trip: walk, train, changes.
+              Uncoloured areas have no station within a 1.5 km walk.
+            </p>
+          </section>
+
+          <details>
+            <summary>How is this calculated?</summary>
+            <p class="small">
+              Train times come from the official LRT, MRT, Monorail, BRT and KTM Komuter
+              timetables. Waiting is half the average gap between trains, each change adds
+              5 minutes, and walking is estimated at 4.5 km/h in a straight line plus 30%.
+              Buses and e-hailing are not included, so treat results as a guide.
+            </p>
+          </details>
+        </div>
+
+        <div id="mode-network" hidden>
+          <p id="net-lede">
+            Every train on the weekday timetable, moving along its line. Tap a train to follow
+            it, or a station to see what leaves next.
           </p>
-        </details>
+
+          <section id="net-clock">
+            <div id="net-time-row">
+              <span id="net-time">07:30</span>
+              <span id="net-count"></span>
+            </div>
+            <input id="net-slider" type="range" min="18000" max="90000" step="60" value="27000" aria-label="Time of day" />
+            <div id="net-controls">
+              <button type="button" id="net-play" aria-label="Pause trains">❚❚ Pause</button>
+              <div id="net-speed" role="group" aria-label="Playback speed">
+                <button type="button" data-speed="10">10×</button>
+                <button type="button" data-speed="60" class="on">60×</button>
+                <button type="button" data-speed="300">300×</button>
+              </div>
+            </div>
+            <div id="net-jumps" aria-label="Jump to a time of day">
+              <button type="button" data-time="27000">Morning peak</button>
+              <button type="button" data-time="43200">Midday</button>
+              <button type="button" data-time="64800">Evening peak</button>
+              <button type="button" data-time="81000">Late</button>
+              <button type="button" id="net-now">Now</button>
+            </div>
+          </section>
+
+          <section id="net-card" aria-live="polite"></section>
+
+          <section>
+            <h2>Lines</h2>
+            <ul id="net-lines"></ul>
+            <p class="small">Tap a line to focus on it, tap it again to show everything.</p>
+          </section>
+
+        </div>
 
         <p id="status" role="status"></p>
       </div>

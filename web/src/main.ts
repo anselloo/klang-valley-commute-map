@@ -6,6 +6,7 @@ import "./style.css";
 import { breakdownHtml, escapeHtml } from "./breakdown";
 import { RouteFinder, type Graph } from "./graph";
 import { bandOf, buildHexes, compute, haversineKm, type Hex, type Result } from "./model";
+import { NetworkView } from "./networkView";
 import type { Station } from "./types";
 
 // Bundlers do not copy MapLibre's worker next to the main bundle, so serve it explicitly.
@@ -75,6 +76,9 @@ const map = new maplibregl.Map({
 });
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
+// `?debug` exposes the map for automated browser checks.
+if (new URLSearchParams(location.search).has("debug")) (window as unknown as { __map: maplibregl.Map }).__map = map;
+
 // On phones the panel is a bottom sheet: keep map controls above it and centre the map in what is left.
 new ResizeObserver(() => {
   const h = isPhone() ? panel.offsetHeight : 0;
@@ -123,10 +127,10 @@ function addMapLayers(stations: Station[], hexes: Hex[]) {
     type: "geojson",
     data: {
       type: "FeatureCollection",
-      features: stations.map((s) => ({
+      features: stations.map((s, i) => ({
         type: "Feature",
         geometry: { type: "Point", coordinates: [s.lon, s.lat] },
-        properties: { name: s.name, lines: s.lines.join(", ") },
+        properties: { i, name: s.name, lines: s.lines.join(", ") },
       })),
     },
   });
@@ -166,6 +170,7 @@ async function start() {
   let dest: Destination | null = null;
   let result: Result | null = null;
   let picking = false;
+  let mode: "commute" | "network" = "commute";
 
   const marker = new maplibregl.Marker({ color: "#c0392b", draggable: true });
   const pinLabel = document.createElement("span");
@@ -261,6 +266,10 @@ async function start() {
   }
 
   map.on("click", (e) => {
+    if (mode === "network") {
+      netView.handleClick(e.point);
+      return;
+    }
     if (picking) {
       void setDestination({ lng: e.lngLat.lng, lat: e.lngLat.lat, label: nearestLabel(e.lngLat.lng, e.lngLat.lat) });
       return;
@@ -338,6 +347,53 @@ async function start() {
   map.on("mouseleave", "station-dots", () => {
     map.getCanvas().style.cursor = "";
     popup.remove();
+  });
+
+  // Two views of the same map: the commute map, and the live train network.
+  const netView = new NetworkView(map, stations, {
+    isPhone,
+    useAsDestination(i) {
+      const s = stations[i];
+      void setMode("commute").then(() => {
+        map.flyTo({ center: [s.lon, s.lat], zoom: Math.max(map.getZoom(), 10.8) });
+        return setDestination({ lng: s.lon, lat: s.lat, label: s.name });
+      });
+    },
+  });
+  async function setMode(next: "commute" | "network") {
+    if (next === mode) return;
+    mode = next;
+    document.body.dataset.mode = next;
+    document.querySelectorAll<HTMLButtonElement>("#modes button").forEach((b) => {
+      const on = b.dataset.mode === next;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-selected", String(on));
+    });
+    el("mode-commute").hidden = next !== "commute";
+    el("mode-network").hidden = next !== "network";
+    el("head-play").hidden = next !== "network";
+    if (next === "network") {
+      setPicking(false);
+      breakdownPopup.remove();
+      marker.remove();
+      map.setLayoutProperty("hex-fill", "visibility", "none");
+      statusEl.textContent = "";
+      if (isPhone()) setCollapsed(true);
+      try {
+        await netView.enter();
+      } catch (err) {
+        statusEl.textContent = "Could not load the train timetable. Try again later.";
+        console.error(err);
+      }
+    } else {
+      netView.leave();
+      map.setLayoutProperty("hex-fill", "visibility", "visible");
+      summaryEl.textContent = "Loading…";
+      await update();
+    }
+  }
+  document.querySelectorAll<HTMLButtonElement>("#modes button").forEach((b) => {
+    b.addEventListener("click", () => void setMode(b.dataset.mode as "commute" | "network"));
   });
 
   // Start with a worked example so the first screen already shows what the site does.

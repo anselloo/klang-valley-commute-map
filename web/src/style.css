@@ -80,3 +80,52 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px 
   #panel h1 { font-size: 16px; }
   #lede { display: none; }
 }
+
+/* ---- Modes and the train network view ---- */
+[hidden] { display: none !important; }
+#head-buttons { display: flex; gap: 6px; flex: none; }
+button.icon { min-width: 34px; padding: 4px 8px; }
+#modes { display: flex; margin-top: 10px; }
+#modes button { flex: 1; border-radius: 0; font-weight: 500; }
+#modes button:first-child { border-radius: 6px 0 0 6px; }
+#modes button:last-child { border-radius: 0 6px 6px 0; border-left: 0; }
+#modes button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+body[data-mode="network"] #mini-legend { display: none !important; }
+
+#net-lede { margin: 10px 0 0; font-size: 13px; line-height: 1.4; }
+#net-time-row { display: flex; align-items: baseline; gap: 10px; }
+#net-time { font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0.5px; }
+#net-count { font-size: 12px; color: #4a5866; }
+#net-slider { width: 100%; margin: 6px 0 4px; accent-color: var(--accent); }
+#net-controls { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+#net-speed { display: flex; }
+#net-speed button { border-radius: 0; padding: 7px 9px; }
+#net-speed button:first-child { border-radius: 6px 0 0 6px; }
+#net-speed button:last-child { border-radius: 0 6px 6px 0; }
+#net-speed button + button { border-left: 0; }
+#net-speed button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+#net-play { min-width: 92px; }
+#net-jumps { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+#net-jumps button { border-radius: 14px; padding: 4px 10px; font-size: 12px; }
+
+#net-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.line-row { width: 100%; display: flex; align-items: center; gap: 8px; text-align: left; padding: 5px 8px; background: #fff; }
+.line-row.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: #eef5fc; }
+.line-row .swatch { width: 22px; height: 6px; border-radius: 3px; flex: none; }
+.line-name { flex: 1; min-width: 0; }
+.line-count { font-variant-numeric: tabular-nums; color: #4a5866; font-size: 12px; }
+
+.card { border: 1px solid #c8ced4; border-radius: 8px; padding: 8px 10px; background: #fafbfc; }
+.card p { margin: 4px 0; font-size: 13px; }
+.card-title { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.card-title .swatch { width: 22px; height: 6px; border-radius: 3px; }
+.card-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.departures { list-style: none; margin: 4px 0 0; padding: 0; font-size: 13px; }
+.departures li { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-top: 1px solid #eceff2; }
+.departures li:first-child { border-top: 0; }
+.departures .swatch { width: 14px; height: 6px; border-radius: 3px; flex: none; }
+.dep-text { flex: 1; min-width: 0; }
+.dep-time { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.line-row { padding: 3px 8px; }
+#net-card { margin-top: 12px; }
+#net-card .small:only-child { margin: 0; }
