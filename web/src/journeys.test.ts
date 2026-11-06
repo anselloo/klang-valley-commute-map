@@ -160,16 +160,17 @@ describe("bus links", () => {
   const feeder = JSON.parse(readFileSync(new URL("../../data/feeder.json", import.meta.url), "utf-8")) as FeederStop[];
 
   it("links many bus stops to rail stations (feeder and city routes) with believable times", () => {
-    expect(feeder.length).toBeGreaterThan(3000);
+    expect(feeder.length).toBeGreaterThan(5000);
     for (const [lat, lon, links] of feeder) {
       expect(lat).toBeGreaterThan(2.5);
       expect(lon).toBeGreaterThan(100.9);
-      for (const [station, to, from, route] of links) {
+      for (const [station, to, from, route, routeBack] of links) {
         expect(station).toBeLessThan(stations.length);
         expect(to).toBeGreaterThan(2);
         expect(to).toBeLessThanOrEqual(75);
         expect(from).toBeLessThanOrEqual(75);
         expect(route.length).toBeGreaterThan(0);
+        expect(routeBack.length).toBeGreaterThan(0);
       }
     }
   });
@@ -258,5 +259,27 @@ describe("combining two destinations", () => {
     const equal = combine([a, b], "average", [0, 0]);
     const mean = combine([a, b], "average", [1, 1]);
     hexes.forEach((_, i) => expect(equal[i]).toBe(mean[i]));
+  });
+});
+
+describe("bus changes", () => {
+  const feeder = JSON.parse(readFileSync(new URL("../../data/feeder.json", import.meta.url), "utf-8")) as FeederStop[];
+
+  it("some links change buses, and never board the same route twice in a row", () => {
+    const links = feeder.flatMap(([, , l]) => l);
+    expect(links.filter((l) => l[3].includes(" > ")).length).toBeGreaterThan(1000);
+    for (const l of links) {
+      for (const chain of [l[3], l[4]]) {
+        const routes = chain.split(" > ");
+        routes.forEach((r, i) => i > 0 && expect(r).not.toBe(routes[i - 1]));
+      }
+    }
+  });
+
+  it("links are listed best first for every stop", () => {
+    // Stops are ranked by time to the station, so the list is sorted for every stop.
+    for (const [, , links] of feeder) {
+      for (let i = 1; i < links.length; i++) expect(links[i][1]).toBeGreaterThanOrEqual(links[i - 1][1]);
+    }
   });
 });

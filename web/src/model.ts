@@ -26,10 +26,11 @@ export interface Access {
 }
 export const WALK: Access = { id: "walk", radiusKm: WALK_RADIUS_KM, rings: 3, verb: "Walk", reach: "a 1.5 km walk" };
 /** Walking, plus Rapid KL buses: a stop within BUS_STOP_KM with a direct bus to a station is a way onto the rail network. */
-export const BUS: Access = { id: "bus", radiusKm: WALK_RADIUS_KM, rings: 3, verb: "Walk", reach: "a 1.5 km walk or a direct bus" };
+export const BUS: Access = { id: "bus", radiusKm: WALK_RADIUS_KM, rings: 3, verb: "Walk", reach: "a 1.5 km walk or a bus" };
 export const BUS_STOP_KM = 0.5;
-/** A bus stop with a direct bus to a station: lat, lon, and the stations it reaches [station, minutes to it, minutes from it, route]. */
-export type FeederStop = [number, number, [number, number, number, string][]];
+/** A bus stop with a bus route to a station (changes between buses allowed): lat, lon, and the stations it reaches
+ *  [station, minutes to it, minutes from it, routes to it, routes from it], routes joined with " > " when there is a change. */
+export type FeederStop = [number, number, [number, number, number, string, string][]];
 /** Bike, scooter or e-hailing to the station. Short distances are still walked. */
 export const RIDE: Access = { id: "ride", radiusKm: 4, rings: 6, verb: "Walk or e-hail", reach: "a 4 km ride" };
 const RIDE_KMH = 20; // door to door in city traffic, once the vehicle is found
@@ -70,6 +71,8 @@ export interface Near {
   walk: number;
   back?: number;
   via?: string;
+  /** The bus route(s) for the leg from the station back to here, when different from `via`. */
+  viaBack?: string;
 }
 
 export interface Hex {
@@ -147,8 +150,8 @@ export function buildHexes(stations: Station[], access: Access = WALK, feeder: F
         let hex = byId.get(id);
         if (!hex) byId.set(id, (hex = { id, lat: hlat, lon: hlon, near: [] }));
         const walk = walkMinutes(km);
-        for (const [station, to, from, route] of links) {
-          hex.near.push({ station, walk: walk + to, back: walk + from, via: route });
+        for (const [station, to, from, route, routeBack] of links) {
+          hex.near.push({ station, walk: walk + to, back: walk + from, via: route, viaBack: routeBack });
         }
       }
     }
@@ -174,7 +177,9 @@ export function stationsNear(
       const km = haversineKm(lat, lon, slat, slon);
       if (km > BUS_STOP_KM) continue;
       const walk = walkMinutes(km);
-      for (const [station, to, from, route] of links) out.push({ station, walk: walk + to, back: walk + from, via: route });
+      for (const [station, to, from, route, routeBack] of links) {
+        out.push({ station, walk: walk + to, back: walk + from, via: route, viaBack: routeBack });
+      }
     }
   }
   return out;
@@ -201,7 +206,7 @@ export function compute(
   const destStations = stationsNear(stations, destLat, destLon, access, feeder).map((d) => ({
     station: d.station,
     walk: reverse ? d.walk : (d.back ?? d.walk),
-    via: d.via,
+    via: reverse ? d.via : (d.viaBack ?? d.via),
   }));
   const stationTimes = new Float64Array(n).fill(Infinity);
   const alightAt = new Int32Array(n).fill(-1);

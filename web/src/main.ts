@@ -230,7 +230,7 @@ async function start() {
   /** Trips a week to A and to B, used by the "Average trip" measure. */
   const weights = (initial.get("w") ?? "5,5").split(",").map((x) => Math.min(14, Math.max(0, Math.round(Number(x)) || 0)));
   while (weights.length < 2) weights.push(5);
-  /** Bus stops with a direct bus to a station, for the chosen time of day; empty unless the bus option is on. */
+  /** Bus stops with a bus route to a station, for the chosen time of day; empty unless the bus option is on. */
   let feeder: FeederStop[] = access.id === "bus" ? await getFeeder(when) : [];
   let hexes = buildHexes(stations, access, feeder);
   let hexIndex = new Map(hexes.map((h, i) => [h.id, i]));
@@ -351,7 +351,7 @@ async function start() {
       access.id === "walk"
         ? "Stations within a 1.5 km walk, at 4.5 km/h."
         : access.id === "bus"
-          ? "A walk of up to 1.5 km to a station, or up to 500 m to a Rapid KL bus stop (feeder or city route) whose bus goes straight to one. Includes the wait for the bus, but no bus-to-bus changes."
+          ? "A walk of up to 1.5 km to a station, or up to 500 m to a Rapid KL bus stop (feeder or city route) with a bus to one, changing buses if that is quicker. Includes the wait for each bus."
           : "Walk to stations up to 1.5 km away; beyond that, a bike, scooter or e-hailed car up to 4 km at about 20 km/h, plus 4 minutes to get going.";
   }
 
@@ -517,9 +517,12 @@ async function start() {
     const walkIn = minutesOf(hexLeg);
     const walkOut = destLeg.walk;
     // Going there, the place's own leg gets you onto the train and the destination's gets you off; coming back, the reverse.
-    const busWords = (route: string | undefined, boarding: boolean) =>
-      route ? (boarding ? `Walk, then bus ${route}` : `Bus ${route}, then walk`) : undefined;
-    const hexVia = busWords(hexLeg.via, !reverse);
+    const busWords = (route: string | undefined, boarding: boolean) => {
+      if (!route) return undefined;
+      const buses = route.includes(" > ") ? `buses ${route.replaceAll(" > ", ", then ")}` : `bus ${route}`;
+      return boarding ? `Walk, then ${buses}` : `${buses[0].toUpperCase()}${buses.slice(1)}, then walk`;
+    };
+    const hexVia = busWords(reverse ? (hexLeg.viaBack ?? hexLeg.via) : hexLeg.via, !reverse);
     const destVia = busWords(destLeg.via, reverse);
     const finder = await getFinder(when, stations.length);
     const route = reverse ? finder.route(alight, board) : finder.route(board, alight);
