@@ -289,7 +289,7 @@ const msState = await lang.evaluate(() => ({
   step: document.querySelector("#mode-commute section h2").innerText,
   toggle: document.getElementById("lang-toggle").innerText,
 }));
-ok("the language switch changes the page to Bahasa Melayu", enTitle === "Where can I live?" && msState.h1 === "Di mana saya boleh tinggal?" && /^Masa kereta api ke /.test(msState.summary) && msState.html === "ms" && /Di mana anda bekerja/.test(msState.step) && msState.toggle === "EN", JSON.stringify(msState));
+ok("the language switch changes the page to Bahasa Melayu", enTitle === "Where can I live?" && msState.h1 === "Di mana saya boleh tinggal?" && /^Masa perjalanan tren ke /.test(msState.summary) && msState.html === "ms" && /Di mana anda bekerja/.test(msState.step) && msState.toggle === "EN", JSON.stringify(msState));
 ok("the language is in the address", msState.hash.includes("lang=ms"));
 await lang.click("#access button[data-access='bus']");
 await lang.waitForTimeout(2500);
@@ -303,7 +303,7 @@ await lang.close();
 const shared3 = await browser.newPage({ viewport: { width: 1200, height: 800 } });
 await shared3.goto(base + "?debug#to=3.13434,101.6862&name=KL%20Sentral&lang=ms", { waitUntil: "load" });
 await shared3.waitForTimeout(5500);
-ok("a shared link with lang=ms opens in Bahasa Melayu", /^Masa kereta api ke KL Sentral/.test(await shared3.evaluate(() => document.getElementById("summary").innerText)));
+ok("a shared link with lang=ms opens in Bahasa Melayu", /^Masa perjalanan tren ke KL Sentral/.test(await shared3.evaluate(() => document.getElementById("summary").innerText)));
 await shared3.close();
 
 // If the base-map style service is down, the app falls back to plain OSM tiles and still works.

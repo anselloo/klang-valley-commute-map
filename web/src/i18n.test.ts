@@ -45,6 +45,19 @@ describe("translations", () => {
     expect(same.length).toBeLessThan(10);
   });
 
+  it("uses everyday Malaysian transit words, not the ones a first draft got wrong", () => {
+    useLang("ms");
+    const all = keys.map((k) => t(k)).join(" | ");
+    useLang("en");
+    // "tren" for urban rail (Rapid KL's own word), trains "bertolak" (berlepas is for flights),
+    // feeder buses are "bas perantara", and errors are "ralat".
+    for (const wrong of ["kereta api", "berlepas", "penyuap", "Sesuatu telah berlaku", "Balik", "Buang "]) {
+      expect(all, wrong).not.toContain(wrong);
+    }
+    expect(all).toContain("tren");
+    expect(all).toContain("bas perantara");
+  });
+
   it("fills placeholders", () => {
     useLang("ms");
     expect(t("pin.near", { station: "KL Sentral" })).toBe("pin anda berhampiran KL Sentral");
@@ -73,10 +86,10 @@ describe("translations", () => {
       total: 40,
     });
     useLang("en");
-    expect(html).toContain("Berjalan ke Surian");
+    expect(html).toContain("Berjalan kaki ke Surian");
     expect(html).toContain("Tunggu KGL");
-    expect(html).toContain("Naik KGL: Surian → Muzium Negara (3 perhentian)");
-    expect(html).toContain("Bas 590, kemudian T453: Muzium Negara → Bukit Dukung");
+    expect(html).toContain("Naik KGL: Surian → Muzium Negara (3 stesen)");
+    expect(html).toContain("Naik bas 590, kemudian T453: Muzium Negara → Bukit Dukung");
     expect(html).toContain("Jumlah");
   });
 
@@ -87,6 +100,7 @@ describe("translations", () => {
     expect(lineLabel("Port Klang Line")).toBe("Laluan Pelabuhan Klang");
     expect(lineLabel("KLIA Ekspres")).toBe("KLIA Ekspres");
     expect(modeLabel("Monorail")).toBe("Monorel");
+    expect(modeLabel("Airport rail")).toBe("Tren lapangan terbang");
     expect(modeLabel("LRT")).toBe("LRT");
     useLang("en");
     expect(lineLabel("Ampang Line")).toBe("Ampang Line");
