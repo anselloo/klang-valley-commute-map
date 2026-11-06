@@ -92,5 +92,3 @@ README.md     what it is, screenshot, how to run locally
 - Overlay rental price data
 - Penang and Johor Bahru versions
 
-## First prompt for the AI coding tool
-> Read SPEC.md. Do milestone 1 only: set up the repo layout and write the Python script in /scripts that downloads both GTFS feeds, filters to Klang Valley rail, and prints the routes and station count. Stop when it runs and show me the output.
