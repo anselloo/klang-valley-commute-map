@@ -94,7 +94,16 @@ Status as of 2026-11-06: all six are built, pushed and deployed. One item is sti
 - Walk times in `data/transfers.json` are estimates and should be checked on the ground.
 - The KTM calendar in the feed has an end date; the monthly refresh picks up new schedules.
 
-## v2 ideas (parking lot, don't build yet)
+## v2: interactive train network (built)
+An animated view of the rail network on the same map, as a second tab next to the commute map.
+
+- Every train on the weekday timetable moves along its line. Prasarana lines follow the published track shape and are expanded from the published headways; KTM Komuter is drawn as straight lines between stations and uses its real trips, clipped to the Klang Valley. The build step (`scripts/build_network.py`) writes `data/network.json`.
+- A clock with play/pause, 10×/60×/300× speed, a slider (05:00 to 01:00), and jumps to morning peak, midday, evening peak, late and now.
+- Tap a train to see its line, destination and next stop and follow it with the camera; tap a station for its next departures (and to use it as the commute destination); tap a line to focus on it. Lines draw in when the view opens.
+- Works on a phone: the bottom sheet keeps the tabs, clock, play button and a one-line summary of the selection visible when collapsed.
+- Not included: real-time positions, bus services, and exact timetables for Prasarana (its trains are generated from headways).
+
+## Later ideas (parking lot, don't build yet)
 - Add Rapid KL buses and MRT feeder buses
 - "Compare two destinations" mode for couples with different workplaces
 - Overlay rental price data
