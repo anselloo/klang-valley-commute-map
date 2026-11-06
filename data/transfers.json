@@ -1,0 +1,19 @@
+{
+  "_comment": "Hand-maintained out-of-system walking transfers between stops that are too far apart (>150 m) to be merged automatically. Ids are '<feed>:<stop_id>'. walk_min replaces the usual 5 min transfer penalty. Walk times are estimates and need checking on the ground.",
+  "transfers": [
+    {"from": "prasarana:AG6",  "to": "ktmb:18900",     "walk_min": 4, "note": "Bandaraya (LRT) <-> Bank Negara (KTM)"},
+    {"from": "prasarana:KJ15", "to": "prasarana:MR1",  "walk_min": 5, "note": "KL Sentral: Kelana Jaya platforms <-> Monorail"},
+    {"from": "prasarana:KJ15", "to": "ktmb:19100",     "walk_min": 5, "note": "KL Sentral: Kelana Jaya platforms <-> KTM"},
+    {"from": "prasarana:MR1",  "to": "ktmb:19100",     "walk_min": 5, "note": "KL Sentral: Monorail <-> KTM"},
+    {"from": "prasarana:AG4",  "to": "ktmb:18800",     "walk_min": 5, "note": "PWTC (LRT) <-> Putra (KTM)"},
+    {"from": "prasarana:KG17", "to": "prasarana:AG8",  "walk_min": 5, "note": "Merdeka (MRT) <-> Plaza Rakyat (LRT)"},
+    {"from": "prasarana:KJ14", "to": "ktmb:19000",     "walk_min": 8, "note": "Pasar Seni <-> Kuala Lumpur (KTM)"},
+    {"from": "prasarana:SA1",  "to": "prasarana:KG09", "walk_min": 4, "note": "Bandar Utama (Shah Alam Line <-> MRT)"},
+    {"from": "prasarana:KJ27", "to": "prasarana:SA7",  "walk_min": 4, "note": "Glenmarie <-> Glenmarie 2"},
+    {"from": "prasarana:PY04", "to": "ktmb:18500",     "walk_min": 4, "note": "Sungai Buloh (MRT) <-> KTM"},
+    {"from": "prasarana:KJ9",  "to": "prasarana:PY20", "walk_min": 5, "note": "Ampang Park (LRT) <-> Ampang Park (MRT)"},
+    {"from": "prasarana:SP13","to": "ktmb:19400",      "walk_min": 7, "note": "Salak Selatan (LRT) <-> KTM"},
+    {"from": "prasarana:PY14", "to": "ktmb:50300",     "walk_min": 6, "note": "Kentomen (MRT) <-> Batu Kentomen (KTM)"},
+    {"from": "prasarana:KJ12", "to": "prasarana:MR8",  "walk_min": 6, "note": "Dang Wangi (LRT) <-> Bukit Nanas (Monorail)"}
+  ]
+}

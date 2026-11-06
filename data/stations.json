@@ -1,0 +1,1838 @@
+[
+{
+"id": "S000",
+"name": "16 Sierra",
+"lat": 2.964974,
+"lon": 101.654812,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S001",
+"name": "Abdullah Hukum",
+"lat": 3.118712,
+"lon": 101.672913,
+"lines": [
+"KJL",
+"Port Klang Line"
+]
+},
+{
+"id": "S002",
+"name": "Alam Megah",
+"lat": 3.023151,
+"lon": 101.572029,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S003",
+"name": "Alam Sutera",
+"lat": 3.0547,
+"lon": 101.656468,
+"lines": [
+"SPL"
+]
+},
+{
+"id": "S004",
+"name": "Ampang",
+"lat": 3.150318,
+"lon": 101.760049,
+"lines": [
+"AGL"
+]
+},
+{
+"id": "S005",
+"name": "Ampang Park",
+"lat": 3.159894,
+"lon": 101.719017,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S006",
+"name": "Ampang Park",
+"lat": 3.16225,
+"lon": 101.71781,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S007",
+"name": "Angkasapuri",
+"lat": 3.113212,
+"lon": 101.673367,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S008",
+"name": "Ara Damansara",
+"lat": 3.108643,
+"lon": 101.586372,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S009",
+"name": "Asia Jaya",
+"lat": 3.104343,
+"lon": 101.637695,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S010",
+"name": "Awan Besar",
+"lat": 3.062131,
+"lon": 101.670555,
+"lines": [
+"SPL"
+]
+},
+{
+"id": "S011",
+"name": "Bandar Baru Klang",
+"lat": 3.0625,
+"lon": 101.465556,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S012",
+"name": "Bandar Bukit Tinggi",
+"lat": 2.993056,
+"lon": 101.445833,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S013",
+"name": "Bandar Puteri",
+"lat": 3.017111,
+"lon": 101.612855,
+"lines": [
+"SPL"
+]
+},
+{
+"id": "S014",
+"name": "Bdr Tasek Selatan",
+"lat": 3.076144,
+"lon": 101.711113,
+"lines": [
+"SPL",
+"Seremban Line"
+]
+},
+{
+"id": "S015",
+"name": "Bandar Tun Hussein Onn",
+"lat": 3.048223,
+"lon": 101.775109,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S016",
+"name": "Bandar Tun Razak",
+"lat": 3.089576,
+"lon": 101.712466,
+"lines": [
+"SPL"
+]
+},
+{
+"id": "S017",
+"name": "Bandar Utama",
+"lat": 3.14671,
+"lon": 101.618599,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S018",
+"name": "Bandar Utama",
+"lat": 3.144722,
+"lon": 101.618611,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S019",
+"name": "Bandar Utama 11",
+"lat": 3.133333,
+"lon": 101.604444,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S020",
+"name": "Bandaraya - Uob",
+"lat": 3.155567,
+"lon": 101.694485,
+"lines": [
+"AGL",
+"SPL"
+]
+},
+{
+"id": "S021",
+"name": "Bangi",
+"lat": 2.904467,
+"lon": 101.785943,
+"lines": [
+"Seremban Line"
+]
+},
+{
+"id": "S022",
+"name": "Bangsar - Bank Rakyat",
+"lat": 3.127588,
+"lon": 101.679062,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S023",
+"name": "Bank Negara",
+"lat": 3.155105,
+"lon": 101.693118,
+"lines": [
+"Port Klang Line",
+"Seremban Line"
+]
+},
+{
+"id": "S024",
+"name": "Batang Benar",
+"lat": 2.829904,
+"lon": 101.826655,
+"lines": [
+"Seremban Line"
+]
+},
+{
+"id": "S025",
+"name": "Batu 11 Cheras",
+"lat": 3.041339,
+"lon": 101.773383,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S026",
+"name": "Batu Caves",
+"lat": 3.237796,
+"lon": 101.681215,
+"lines": [
+"Seremban Line"
+]
+},
+{
+"id": "S027",
+"name": "Batu Kentomenn",
+"lat": 3.198485,
+"lon": 101.681138,
+"lines": [
+"Seremban Line"
+]
+},
+{
+"id": "S028",
+"name": "Batu Tiga",
+"lat": 3.076091,
+"lon": 101.559811,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S029",
+"name": "Bukit Badak",
+"lat": 3.036147,
+"lon": 101.470176,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S030",
+"name": "Bukit Bintang",
+"lat": 3.146262,
+"lon": 101.711224,
+"lines": [
+"KGL",
+"MRL"
+]
+},
+{
+"id": "S031",
+"name": "Bukit Dukung",
+"lat": 3.026413,
+"lon": 101.771072,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S032",
+"name": "Bukit Jalil",
+"lat": 3.058196,
+"lon": 101.692125,
+"lines": [
+"SPL"
+]
+},
+{
+"id": "S033",
+"name": "Bukit Nanas",
+"lat": 3.156214,
+"lon": 101.704809,
+"lines": [
+"MRL"
+]
+},
+{
+"id": "S034",
+"name": "Cahaya",
+"lat": 3.140575,
+"lon": 101.756677,
+"lines": [
+"AGL"
+]
+},
+{
+"id": "S035",
+"name": "Cempaka",
+"lat": 3.138324,
+"lon": 101.752979,
+"lines": [
+"AGL"
+]
+},
+{
+"id": "S036",
+"name": "Chan Sow Lin",
+"lat": 3.1282,
+"lon": 101.715968,
+"lines": [
+"AGL",
+"PYL",
+"SPL"
+]
+},
+{
+"id": "S037",
+"name": "Cheras",
+"lat": 3.112609,
+"lon": 101.714178,
+"lines": [
+"SPL"
+]
+},
+{
+"id": "S038",
+"name": "Chow Kit",
+"lat": 3.167358,
+"lon": 101.698379,
+"lines": [
+"MRL"
+]
+},
+{
+"id": "S039",
+"name": "Cochrane",
+"lat": 3.132829,
+"lon": 101.722962,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S040",
+"name": "Conlay",
+"lat": 3.15145,
+"lon": 101.71801,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S041",
+"name": "Cyberjaya City Centre",
+"lat": 2.9384,
+"lon": 101.6659,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S042",
+"name": "Cyberjaya Utara",
+"lat": 2.95,
+"lon": 101.6573,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S043",
+"name": "Damai",
+"lat": 3.164406,
+"lon": 101.724489,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S044",
+"name": "Damansara Damai",
+"lat": 3.199892,
+"lon": 101.592623,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S045",
+"name": "Damansara Idaman",
+"lat": 3.122778,
+"lon": 101.594167,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S046",
+"name": "Dang Wangi",
+"lat": 3.156942,
+"lon": 101.701975,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S047",
+"name": "Dato' Keramat",
+"lat": 3.16509,
+"lon": 101.73184,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S048",
+"name": "Dato' Menteri - Sa Sentral",
+"lat": 3.069722,
+"lon": 101.521111,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S049",
+"name": "Glenmarie",
+"lat": 3.094732,
+"lon": 101.590622,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S050",
+"name": "Glenmarie 2",
+"lat": 3.095278,
+"lon": 101.588611,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S051",
+"name": "Gombak",
+"lat": 3.231793,
+"lon": 101.724427,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S052",
+"name": "Hang Tuah",
+"lat": 3.140178,
+"lon": 101.705999,
+"lines": [
+"AGL",
+"MRL",
+"SPL"
+]
+},
+{
+"id": "S053",
+"name": "Hospital Kuala Lumpur",
+"lat": 3.17405,
+"lon": 101.70239,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S054",
+"name": "Imbi",
+"lat": 3.14283,
+"lon": 101.70945,
+"lines": [
+"MRL"
+]
+},
+{
+"id": "S055",
+"name": "Ioi Puchong Jaya",
+"lat": 3.048101,
+"lon": 101.62095,
+"lines": [
+"SPL"
+]
+},
+{
+"id": "S056",
+"name": "Jalan Ipoh",
+"lat": 3.189319,
+"lon": 101.681145,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S057",
+"name": "Jalan Meru",
+"lat": 3.058889,
+"lon": 101.451944,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S058",
+"name": "Jalan Templer",
+"lat": 3.084013,
+"lon": 101.656402,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S059",
+"name": "Jambatan Kota",
+"lat": 3.047222,
+"lon": 101.4475,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S060",
+"name": "Jelatek",
+"lat": 3.167204,
+"lon": 101.735344,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S061",
+"name": "Jinjang",
+"lat": 3.209544,
+"lon": 101.655829,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S062",
+"name": "Jln Kastam",
+"lat": 3.013128,
+"lon": 101.402599,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S063",
+"name": "Johan Setia",
+"lat": 2.976111,
+"lon": 101.459167,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S064",
+"name": "Kajang",
+"lat": 2.983,
+"lon": 101.790473,
+"lines": [
+"KGL",
+"Seremban Line"
+]
+},
+{
+"id": "S065",
+"name": "Kajang 2",
+"lat": 2.96264,
+"lon": 101.79207,
+"lines": [
+"Seremban Line"
+]
+},
+{
+"id": "S066",
+"name": "Kampung Baru - Cbp Coopbank Pertama",
+"lat": 3.161386,
+"lon": 101.706608,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S067",
+"name": "Kampung Batu",
+"lat": 3.205207,
+"lon": 101.675528,
+"lines": [
+"PYL",
+"Seremban Line"
+]
+},
+{
+"id": "S068",
+"name": "Kampung Selamat",
+"lat": 3.197266,
+"lon": 101.578499,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S069",
+"name": "Kayu Ara",
+"lat": 3.134722,
+"lon": 101.616667,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S070",
+"name": "Kelana Jaya",
+"lat": 3.112497,
+"lon": 101.6043,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S071",
+"name": "Kentomen",
+"lat": 3.19563,
+"lon": 101.6797,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S072",
+"name": "Kepong",
+"lat": 3.202996,
+"lon": 101.637381,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S073",
+"name": "Kepong Baru",
+"lat": 3.211663,
+"lon": 101.648193,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S074",
+"name": "Kepong Sentral",
+"lat": 3.208242,
+"lon": 101.628603,
+"lines": [
+"PYL",
+"Port Klang Line"
+]
+},
+{
+"id": "S075",
+"name": "Kerinchi",
+"lat": 3.115506,
+"lon": 101.668572,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S076",
+"name": "Kerjaya",
+"lat": 3.082222,
+"lon": 101.561944,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S077",
+"name": "Kg Dato Harun",
+"lat": 3.084828,
+"lon": 101.632339,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S078",
+"name": "Kg Raja Uda",
+"lat": 3.020253,
+"lon": 101.41023,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S079",
+"name": "Kinrara Bk5",
+"lat": 3.050506,
+"lon": 101.644294,
+"lines": [
+"SPL"
+]
+},
+{
+"id": "S080",
+"name": "Kl Sentral",
+"lat": 3.134294,
+"lon": 101.686181,
+"lines": [
+"KJL",
+"Port Klang Line",
+"Seremban Line"
+]
+},
+{
+"id": "S081",
+"name": "Kl Sentral",
+"lat": 3.132852,
+"lon": 101.687817,
+"lines": [
+"MRL"
+]
+},
+{
+"id": "S082",
+"name": "Klang",
+"lat": 3.043078,
+"lon": 101.449543,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S083",
+"name": "Klang Jaya",
+"lat": 3.005278,
+"lon": 101.441667,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S084",
+"name": "Klcc",
+"lat": 3.158935,
+"lon": 101.713287,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S085",
+"name": "Kota Damansara",
+"lat": 3.150134,
+"lon": 101.57869,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S086",
+"name": "Kuala Lumpur",
+"lat": 3.139444,
+"lon": 101.693333,
+"lines": [
+"Port Klang Line",
+"Seremban Line"
+]
+},
+{
+"id": "S087",
+"name": "Kuang",
+"lat": 3.258267,
+"lon": 101.554794,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S088",
+"name": "Kuchai",
+"lat": 3.089546,
+"lon": 101.694124,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S089",
+"name": "Kwasa Damansara",
+"lat": 3.176239,
+"lon": 101.572099,
+"lines": [
+"KGL",
+"PYL"
+]
+},
+{
+"id": "S090",
+"name": "Kwasa Sentral",
+"lat": 3.170112,
+"lon": 101.564651,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S091",
+"name": "Lembah Subang",
+"lat": 3.112094,
+"lon": 101.591034,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S092",
+"name": "Maharajalela",
+"lat": 3.138743,
+"lon": 101.699268,
+"lines": [
+"MRL"
+]
+},
+{
+"id": "S093",
+"name": "Maluri",
+"lat": 3.123456,
+"lon": 101.727546,
+"lines": [
+"AGL",
+"KGL"
+]
+},
+{
+"id": "S094",
+"name": "Masjid Jamek",
+"lat": 3.149418,
+"lon": 101.696523,
+"lines": [
+"AGL",
+"KJL",
+"SPL"
+]
+},
+{
+"id": "S095",
+"name": "Medan Tuanku",
+"lat": 3.15935,
+"lon": 101.69888,
+"lines": [
+"MRL"
+]
+},
+{
+"id": "S096",
+"name": "Mentari",
+"lat": 3.0761,
+"lon": 101.6101,
+"lines": [
+"BRT"
+]
+},
+{
+"id": "S097",
+"name": "Merdeka",
+"lat": 3.141969,
+"lon": 101.70205,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S098",
+"name": "Metro Prima",
+"lat": 3.214438,
+"lon": 101.639402,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S099",
+"name": "Miharja",
+"lat": 3.120973,
+"lon": 101.717922,
+"lines": [
+"AGL"
+]
+},
+{
+"id": "S100",
+"name": "Muhibbah",
+"lat": 3.062229,
+"lon": 101.662552,
+"lines": [
+"SPL"
+]
+},
+{
+"id": "S101",
+"name": "Mutiara Damansara",
+"lat": 3.155301,
+"lon": 101.609077,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S102",
+"name": "Muzium Negara",
+"lat": 3.137317,
+"lon": 101.687336,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S103",
+"name": "Nilai",
+"lat": 2.802356,
+"lon": 101.799303,
+"lines": [
+"Seremban Line"
+]
+},
+{
+"id": "S104",
+"name": "Padang Jawa",
+"lat": 3.052532,
+"lon": 101.492742,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S105",
+"name": "Pandan Indah",
+"lat": 3.134581,
+"lon": 101.746509,
+"lines": [
+"AGL"
+]
+},
+{
+"id": "S106",
+"name": "Pandan Jaya",
+"lat": 3.130141,
+"lon": 101.739122,
+"lines": [
+"AGL"
+]
+},
+{
+"id": "S107",
+"name": "Pantai Dalam",
+"lat": 3.095607,
+"lon": 101.669927,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S108",
+"name": "Pasar Klang",
+"lat": 3.067778,
+"lon": 101.450833,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S109",
+"name": "Pasar Seni",
+"lat": 3.142366,
+"lon": 101.695437,
+"lines": [
+"KGL",
+"KJL"
+]
+},
+{
+"id": "S110",
+"name": "Pel Klang Sel",
+"lat": 2.999323,
+"lon": 101.39179,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S111",
+"name": "Perhentian Midvalley",
+"lat": 3.119211,
+"lon": 101.678865,
+"lines": [
+"Seremban Line"
+]
+},
+{
+"id": "S112",
+"name": "Persiaran Klcc",
+"lat": 3.15712,
+"lon": 101.71834,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S113",
+"name": "Petaling",
+"lat": 3.086485,
+"lon": 101.664338,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S114",
+"name": "Phileo Damansara",
+"lat": 3.129864,
+"lon": 101.642471,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S115",
+"name": "Plaza Rakyat",
+"lat": 3.144049,
+"lon": 101.702105,
+"lines": [
+"AGL",
+"SPL"
+]
+},
+{
+"id": "S116",
+"name": "Puchong Perdana",
+"lat": 3.007913,
+"lon": 101.605021,
+"lines": [
+"SPL"
+]
+},
+{
+"id": "S117",
+"name": "Puchong Prima",
+"lat": 2.999808,
+"lon": 101.596692,
+"lines": [
+"SPL"
+]
+},
+{
+"id": "S118",
+"name": "Pudu",
+"lat": 3.134879,
+"lon": 101.711957,
+"lines": [
+"AGL",
+"SPL"
+]
+},
+{
+"id": "S119",
+"name": "Pusat Bandar Damansara",
+"lat": 3.143444,
+"lon": 101.662857,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S120",
+"name": "Pusat Bandar Puchong",
+"lat": 3.033194,
+"lon": 101.616057,
+"lines": [
+"SPL"
+]
+},
+{
+"id": "S121",
+"name": "Putra",
+"lat": 3.165399,
+"lon": 101.691101,
+"lines": [
+"Port Klang Line",
+"Seremban Line"
+]
+},
+{
+"id": "S122",
+"name": "Putra Heights",
+"lat": 2.996122,
+"lon": 101.575491,
+"lines": [
+"KJL",
+"SPL"
+]
+},
+{
+"id": "S123",
+"name": "Putra Permai",
+"lat": 2.98339,
+"lon": 101.66099,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S124",
+"name": "Putrajaya Sentral",
+"lat": 2.9313,
+"lon": 101.6715,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S125",
+"name": "Pwtc",
+"lat": 3.166333,
+"lon": 101.693586,
+"lines": [
+"AGL",
+"SPL"
+]
+},
+{
+"id": "S126",
+"name": "Raja Chulan",
+"lat": 3.150878,
+"lon": 101.710432,
+"lines": [
+"MRL"
+]
+},
+{
+"id": "S127",
+"name": "Raja Uda",
+"lat": 3.16794,
+"lon": 101.71017,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S128",
+"name": "Rawang",
+"lat": 3.318955,
+"lon": 101.575012,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S129",
+"name": "Salak Selatan",
+"lat": 3.098413,
+"lon": 101.705055,
+"lines": [
+"Seremban Line"
+]
+},
+{
+"id": "S130",
+"name": "Salak Selatan",
+"lat": 3.102201,
+"lon": 101.706179,
+"lines": [
+"SPL"
+]
+},
+{
+"id": "S131",
+"name": "Segambut",
+"lat": 3.186514,
+"lon": 101.664032,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S132",
+"name": "Seksyen 7",
+"lat": 3.067222,
+"lon": 101.486667,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S133",
+"name": "Semantan",
+"lat": 3.150977,
+"lon": 101.665497,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S134",
+"name": "Sentul",
+"lat": 3.183581,
+"lon": 101.688802,
+"lines": [
+"Seremban Line"
+]
+},
+{
+"id": "S135",
+"name": "Sentul",
+"lat": 3.178484,
+"lon": 101.695542,
+"lines": [
+"AGL",
+"SPL"
+]
+},
+{
+"id": "S136",
+"name": "Sentul Barat",
+"lat": 3.179369,
+"lon": 101.684742,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S137",
+"name": "Sentul Timur",
+"lat": 3.185897,
+"lon": 101.695217,
+"lines": [
+"AGL",
+"SPL"
+]
+},
+{
+"id": "S138",
+"name": "Seputeh",
+"lat": 3.113612,
+"lon": 101.681474,
+"lines": [
+"Seremban Line"
+]
+},
+{
+"id": "S139",
+"name": "Serdang",
+"lat": 3.023404,
+"lon": 101.716056,
+"lines": [
+"Seremban Line"
+]
+},
+{
+"id": "S140",
+"name": "Serdang Jaya",
+"lat": 3.0216,
+"lon": 101.709,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S141",
+"name": "Serdang Raya Selatan",
+"lat": 3.028463,
+"lon": 101.707514,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S142",
+"name": "Serdang Raya Utara",
+"lat": 3.041674,
+"lon": 101.704928,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S143",
+"name": "Serendah",
+"lat": 3.376172,
+"lon": 101.614532,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S144",
+"name": "Seri Andalas",
+"lat": 3.015833,
+"lon": 101.440556,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S145",
+"name": "Setia Jaya",
+"lat": 3.083182,
+"lon": 101.61172,
+"lines": [
+"BRT",
+"Port Klang Line"
+]
+},
+{
+"id": "S146",
+"name": "Setiawangsa",
+"lat": 3.17576,
+"lon": 101.73584,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S147",
+"name": "Shah Alam",
+"lat": 3.056388,
+"lon": 101.525302,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S148",
+"name": "South Quay-Usj 1",
+"lat": 3.0617,
+"lon": 101.5969,
+"lines": [
+"BRT"
+]
+},
+{
+"id": "S149",
+"name": "Sri Damansara Barat",
+"lat": 3.198197,
+"lon": 101.608302,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S150",
+"name": "Sri Damansara Sentral",
+"lat": 3.198815,
+"lon": 101.621396,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S151",
+"name": "Sri Delima",
+"lat": 3.207108,
+"lon": 101.665749,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S152",
+"name": "Sri Petaling",
+"lat": 3.061445,
+"lon": 101.687074,
+"lines": [
+"SPL"
+]
+},
+{
+"id": "S153",
+"name": "Sri Rampai",
+"lat": 3.199176,
+"lon": 101.73747,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S154",
+"name": "Sri Raya",
+"lat": 3.062273,
+"lon": 101.772899,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S155",
+"name": "Ss 15",
+"lat": 3.075972,
+"lon": 101.585983,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S156",
+"name": "Ss 18",
+"lat": 3.067182,
+"lon": 101.585945,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S157",
+"name": "Stadium Kajang",
+"lat": 2.994514,
+"lon": 101.786338,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S158",
+"name": "Stadium Shah Alam",
+"lat": 3.079722,
+"lon": 101.548889,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S159",
+"name": "Subang",
+"lat": 3.106111,
+"lon": 101.591111,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S160",
+"name": "Subang Alam",
+"lat": 3.009421,
+"lon": 101.572281,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S161",
+"name": "Subang Jaya",
+"lat": 3.084607,
+"lon": 101.58775,
+"lines": [
+"KJL",
+"Port Klang Line"
+]
+},
+{
+"id": "S162",
+"name": "Sultan Ismail",
+"lat": 3.161245,
+"lon": 101.694109,
+"lines": [
+"AGL",
+"SPL"
+]
+},
+{
+"id": "S163",
+"name": "Sungai Besi",
+"lat": 3.06379,
+"lon": 101.708231,
+"lines": [
+"PYL",
+"SPL"
+]
+},
+{
+"id": "S164",
+"name": "Sungai Buloh",
+"lat": 3.206356,
+"lon": 101.580128,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S165",
+"name": "Sungai Buloh",
+"lat": 3.206429,
+"lon": 101.581779,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S166",
+"name": "Sungai Jernih",
+"lat": 3.000948,
+"lon": 101.783857,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S167",
+"name": "Sunmed",
+"lat": 3.0656,
+"lon": 101.6087,
+"lines": [
+"BRT"
+]
+},
+{
+"id": "S168",
+"name": "Sunway Lagoon",
+"lat": 3.0706,
+"lon": 101.6107,
+"lines": [
+"BRT"
+]
+},
+{
+"id": "S169",
+"name": "Surian",
+"lat": 3.14948,
+"lon": 101.593925,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S170",
+"name": "Sunu-Monash",
+"lat": 3.0654,
+"lon": 101.6016,
+"lines": [
+"BRT"
+]
+},
+{
+"id": "S171",
+"name": "Taipan",
+"lat": 3.04815,
+"lon": 101.590233,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S172",
+"name": "Taman Bahagia",
+"lat": 3.11079,
+"lon": 101.612856,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S173",
+"name": "Taman Connaught",
+"lat": 3.079172,
+"lon": 101.74522,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S174",
+"name": "Taman Equine",
+"lat": 2.98942,
+"lon": 101.67244,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S175",
+"name": "Taman Jaya",
+"lat": 3.104086,
+"lon": 101.645248,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S176",
+"name": "Taman Melati",
+"lat": 3.219558,
+"lon": 101.72197,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S177",
+"name": "Taman Midah",
+"lat": 3.104505,
+"lon": 101.732186,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S178",
+"name": "Taman Mutiara",
+"lat": 3.090989,
+"lon": 101.740453,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S179",
+"name": "Taman Naga Emas",
+"lat": 3.077688,
+"lon": 101.699867,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S180",
+"name": "Taman Paramount",
+"lat": 3.104716,
+"lon": 101.623192,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S181",
+"name": "Taman Perindustrian Puchong",
+"lat": 3.022814,
+"lon": 101.613514,
+"lines": [
+"SPL"
+]
+},
+{
+"id": "S182",
+"name": "Taman Pertama",
+"lat": 3.112547,
+"lon": 101.729371,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S183",
+"name": "Taman Selatan",
+"lat": 3.026667,
+"lon": 101.442222,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S184",
+"name": "Taman Suntex",
+"lat": 3.071578,
+"lon": 101.763552,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S185",
+"name": "Taman Tun Dr Ismail",
+"lat": 3.13613,
+"lon": 101.630539,
+"lines": [
+"KGL"
+]
+},
+{
+"id": "S186",
+"name": "Taman Wahyu",
+"lat": 3.21451,
+"lon": 101.672178,
+"lines": [
+"Seremban Line"
+]
+},
+{
+"id": "S187",
+"name": "Telok Gadong",
+"lat": 3.033932,
+"lon": 101.424947,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S188",
+"name": "Telok Pulai",
+"lat": 3.04089,
+"lon": 101.432153,
+"lines": [
+"Port Klang Line"
+]
+},
+{
+"id": "S189",
+"name": "Titiwangsa",
+"lat": 3.173566,
+"lon": 101.695641,
+"lines": [
+"AGL",
+"MRL",
+"PYL",
+"SPL"
+]
+},
+{
+"id": "S190",
+"name": "Tun Razak Exchange",
+"lat": 3.142646,
+"lon": 101.720248,
+"lines": [
+"KGL",
+"PYL"
+]
+},
+{
+"id": "S191",
+"name": "Tun Sambanthan",
+"lat": 3.13132,
+"lon": 101.69085,
+"lines": [
+"MRL"
+]
+},
+{
+"id": "S192",
+"name": "Uitm Shah Alam",
+"lat": 3.0625,
+"lon": 101.501111,
+"lines": [
+"SAL"
+]
+},
+{
+"id": "S193",
+"name": "Ukm",
+"lat": 2.939775,
+"lon": 101.787623,
+"lines": [
+"Seremban Line"
+]
+},
+{
+"id": "S194",
+"name": "Universiti",
+"lat": 3.114616,
+"lon": 101.661639,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S195",
+"name": "Upm",
+"lat": 3.008489,
+"lon": 101.705396,
+"lines": [
+"PYL"
+]
+},
+{
+"id": "S196",
+"name": "Usj 21",
+"lat": 3.029881,
+"lon": 101.581711,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S197",
+"name": "Usj7",
+"lat": 3.055128,
+"lon": 101.592047,
+"lines": [
+"BRT",
+"KJL"
+]
+},
+{
+"id": "S198",
+"name": "Wangsa Maju",
+"lat": 3.205751,
+"lon": 101.731796,
+"lines": [
+"KJL"
+]
+},
+{
+"id": "S199",
+"name": "Wawasan",
+"lat": 3.035062,
+"lon": 101.588348,
+"lines": [
+"KJL"
+]
+}
+]
