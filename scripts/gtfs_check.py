@@ -58,10 +58,15 @@ def read_table(zf, name):
 
 def weekday_services(calendar):
     """service_ids that run on at least one Mon-Fri day, plus any expiry warnings."""
+    return services_on(calendar, WEEKDAYS)
+
+
+def services_on(calendar, days):
+    """service_ids that run on at least one of the named days (e.g. ["saturday"]), plus expiry warnings."""
     ids, warnings = set(), []
     today = date.today().strftime("%Y%m%d")
     for row in calendar:
-        if any(row[d] == "1" for d in WEEKDAYS):
+        if any(row[d] == "1" for d in days):
             ids.add(row["service_id"])
             if row["end_date"] < today:
                 warnings.append(f"service '{row['service_id']}' ended {row['end_date']}")

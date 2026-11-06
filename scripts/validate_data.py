@@ -58,6 +58,14 @@ def main():
     if any(v is not None and not 0 < v < 240 for r in matrix for v in r if v != 0):
         problems.append("matrix has travel times outside 0-240 minutes")
 
+    for name in ("matrix-pm.json", "matrix-sat.json"):
+        extra = load(name)
+        if len(extra) != n or any(len(r) != n for r in extra):
+            problems.append(f"{name} is not stations x stations")
+        gaps = sum(1 for i, r in enumerate(extra) for j, v in enumerate(r) if i != j and v is None)
+        if pairs and gaps / pairs > MAX_UNREACHABLE:
+            problems.append(f"{name}: {gaps} of {pairs} station pairs have no route")
+
     lines = len(network["lines"])
     if lines < MIN_LINES:
         problems.append(f"only {lines} lines in network.json (expected at least {MIN_LINES})")

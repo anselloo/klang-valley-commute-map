@@ -177,6 +177,23 @@ await page.click("#search button[type='submit']");
 await page.waitForTimeout(2500);
 ok("search jumps to a station by name", (await text("summary")).includes("Bukit Bintang"), await text("summary"));
 
+// Time of day and direction.
+await page.click("#when button[data-when='pm']");
+await page.waitForTimeout(1500);
+await page.click("#dir button[data-dir='from']");
+await page.waitForTimeout(1500);
+const evening = await text("summary");
+ok("evening, coming back, updates the summary", /Train time from .+, weekday evening/.test(evening), evening);
+const hash2 = await page.evaluate(() => location.hash);
+ok("address records time and direction", hash2.includes("when=pm") && hash2.includes("dir=from"), hash2);
+await page.click("#when button[data-when='sat']");
+await page.waitForTimeout(1500);
+ok("Saturday works", (await text("summary")).includes("Saturday"), await text("summary"));
+await page.click("#when button[data-when='am']");
+await page.click("#dir button[data-dir='to']");
+await page.waitForTimeout(1200);
+ok("back to the morning", /Train time to .+, weekday morning/.test(await text("summary")));
+
 console.log(errors.length ? "ERRORS: " + errors.join(" | ") : "no page errors");
 await browser.close();
 if (failed || errors.length) {

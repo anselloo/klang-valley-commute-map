@@ -102,3 +102,43 @@ describe("access modes", () => {
     expect(reach(ride)).toBeGreaterThan(reach(walk));
   });
 });
+
+describe("time of day and direction", () => {
+  const read2 = (name: string) => JSON.parse(readFileSync(new URL(`../../data/${name}`, import.meta.url), "utf-8")) as (number | null)[][];
+  const pm = read2("matrix-pm.json");
+  const sat = read2("matrix-sat.json");
+
+  it("has a matrix for every time of day, sized like the stations", () => {
+    for (const m of [pm, sat]) {
+      expect(m.length).toBe(stations.length);
+      expect(m.every((r) => r.length === stations.length)).toBe(true);
+    }
+  });
+
+  it("evening and Saturday times stay close to the morning ones on a single line", () => {
+    const i = idsOf("KL Sentral")[0];
+    const j = idsOf("KLCC")[0];
+    for (const m of [pm, sat]) {
+      expect(m[i][j]!).toBeGreaterThan(8);
+      expect(m[i][j]!).toBeLessThan(35);
+    }
+  });
+
+  it("'coming back' reads the matrix the other way round", () => {
+    const hexes = buildHexes(stations, WALK);
+    const s = stations.find((x) => x.name === "Kajang")!;
+    const to = compute(stations, matrix, hexes, s.lat, s.lon, WALK, false);
+    const from = compute(stations, matrix, hexes, s.lat, s.lon, WALK, true);
+    // They answer different questions, so at least some stations differ, but both see the whole network.
+    let differ = 0;
+    to.stationTimes.forEach((t, k) => {
+      expect(Number.isFinite(t)).toBe(true);
+      expect(Number.isFinite(from.stationTimes[k])).toBe(true);
+      if (Math.abs(t - from.stationTimes[k]) > 1) differ++;
+    });
+    expect(differ).toBeGreaterThan(0);
+    const t = idsOf("KL Sentral")[0];
+    const k = idsOf("Kajang")[0];
+    expect(from.stationTimes[t] - (matrix[k][t] ?? 0)).toBeGreaterThanOrEqual(0);
+  });
+});

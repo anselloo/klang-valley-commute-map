@@ -36,6 +36,13 @@ DATA_DIR = ROOT / "data"
 
 # Weekday-morning departure window, in minutes after midnight.
 WINDOW = (7 * 60, 9 * 60)
+# Other times people travel. "am" is the one the stations are built from; the others reuse its stations.
+# name, window, days, output suffix
+PERIODS = [
+    ("am", WINDOW, g.WEEKDAYS, ""),
+    ("pm", (17 * 60, 19 * 60 + 30), g.WEEKDAYS, "-pm"),
+    ("sat", (10 * 60, 12 * 60), ["saturday"], "-sat"),
+]
 FALLBACK_PAD = 60  # stops with no departure in the window use the window padded by this much
 TRANSFER_PENALTY = 5.0
 # Infrequent services (some KTM stops have a single train in the window) would otherwise imply
@@ -50,7 +57,7 @@ def to_min(t):
     return h * 60 + m + s / 60
 
 
-def line_data(feed, zf, route_filter, window):
+def line_data(feed, zf, route_filter, window, days=g.WEEKDAYS):
     """Extract line edges and headways for one feed.
 
     Returns (route_names, edges, headway, stop_rows) where
@@ -60,7 +67,7 @@ def line_data(feed, zf, route_filter, window):
     """
     window_start, window_end = window
     routes = {r["route_id"]: r for r in g.read_table(zf, "routes.txt") if route_filter(r)}
-    services, _ = g.weekday_services(g.read_table(zf, "calendar.txt"))
+    services, _ = g.services_on(g.read_table(zf, "calendar.txt"), days)
     trips = {
         t["trip_id"]: t
         for t in g.read_table(zf, "trips.txt")
@@ -327,6 +334,19 @@ def main():
     matrix, graph = solve(edges, headway)
     (DATA_DIR / "matrix.json").write_text(json.dumps(matrix, separators=(",", ":")), encoding="utf-8")
     (DATA_DIR / "graph.json").write_text(json.dumps(graph, separators=(",", ":")), encoding="utf-8")
+    # The same stations at other times: weekday evening and Saturday, each with its own waits.
+    for name, window, days, suffix in PERIODS[1:]:
+        e2, h2 = {}, {}
+        for feed, filt in (("prasarana", g.prasarana_filter), ("ktmb", g.ktmb_filter)):
+            with zipfile.ZipFile(g.FEEDS[feed][1]) as zf:
+                _, e, h, _ = line_data(feed, zf, filt, window, days)
+            e2.update(e)
+            h2.update(h)
+        m2, g2 = solve(e2, h2)
+        (DATA_DIR / f"matrix{suffix}.json").write_text(json.dumps(m2, separators=(",", ":")), encoding="utf-8")
+        (DATA_DIR / f"graph{suffix}.json").write_text(json.dumps(g2, separators=(",", ":")), encoding="utf-8")
+        gaps = sum(1 for r in m2 for v in r if v is None)
+        print(f"{name}: {gaps} unreachable pairs")
     write_meta()
     unreachable = sum(1 for r in matrix for v in r if v is None)
     size = ((DATA_DIR / "matrix.json").stat().st_size + (DATA_DIR / "graph.json").stat().st_size) // 1024

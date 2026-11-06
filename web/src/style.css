@@ -288,3 +288,5 @@ summary { cursor: pointer; color: var(--tint); font-weight: 500; }
 #access { margin-top: 2px; }
 #data-info { margin: 10px 0 0; font-size: 11.5px; opacity: 0.85; }
 #net-note { margin: 0 0 12px; }
+#when, #dir { margin-top: 8px; }
+#when + #dir { margin-top: 6px; }

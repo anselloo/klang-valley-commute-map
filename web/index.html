@@ -45,7 +45,7 @@
         <div id="mode-commute">
           <p id="lede">
             Pick where you work or study. The map colours every area by how long the train
-            journey to it takes on a weekday morning, door to door.
+            journey to it takes, door to door.
           </p>
 
           <section>
@@ -72,7 +72,23 @@
           </section>
 
           <section>
-            <h2><span class="n">3</span> Read the map</h2>
+            <h2><span class="n">3</span> When, and which way?</h2>
+            <div id="when" class="seg" role="group" aria-label="When you travel">
+              <span class="thumb" aria-hidden="true"></span>
+              <button type="button" data-when="am" class="on" aria-pressed="true">Morning</button>
+              <button type="button" data-when="pm" aria-pressed="false">Evening</button>
+              <button type="button" data-when="sat" aria-pressed="false">Saturday</button>
+            </div>
+            <div id="dir" class="seg" role="group" aria-label="Direction of travel">
+              <span class="thumb" aria-hidden="true"></span>
+              <button type="button" data-dir="to" class="on" aria-pressed="true">Going there</button>
+              <button type="button" data-dir="from" aria-pressed="false">Coming back</button>
+            </div>
+            <p class="small" id="when-note">Weekday morning, trains from 7 to 9 am. Pick evening and "coming back" for the trip home.</p>
+          </section>
+
+          <section>
+            <h2><span class="n">4</span> Read the map</h2>
             <p class="small" id="legend-title">Time from each area to your destination:</p>
             <ul id="legend"></ul>
             <p class="small">

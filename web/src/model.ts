@@ -119,6 +119,8 @@ export function compute(
   destLat: number,
   destLon: number,
   access: Access = WALK,
+  /** True for "coming from the destination": times from it to each place instead of to it. */
+  reverse = false,
 ): Result {
   const n = stations.length;
   const destStations = stationsNear(stations, destLat, destLon, access);
@@ -127,7 +129,7 @@ export function compute(
   for (let s = 0; s < n; s++) {
     const row = matrix[s];
     for (const { station: t, walk } of destStations) {
-      const ride = row[t];
+      const ride = reverse ? matrix[t][s] : row[t];
       if (ride === null) continue;
       const total = ride + walk;
       if (total < stationTimes[s]) {

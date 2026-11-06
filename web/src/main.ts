@@ -106,11 +106,23 @@ const stationsPromise = loadJson<Station[]>("stations.json");
 const mapLoaded = new Promise<void>((resolve) => map.on("load", () => resolve()));
 
 // The matrix loads up front; the route graph loads the first time a breakdown is requested.
-const matrixPromise = loadJson<Matrix>("matrix.json");
-let finderPromise: Promise<RouteFinder> | null = null;
-const getFinder = (stationCount: number) => {
-  finderPromise ??= loadJson<Graph>("graph.json").then((g) => new RouteFinder(g, stationCount));
-  return finderPromise;
+type When = "am" | "pm" | "sat";
+const WHEN: Record<When, { suffix: string; label: string; hours: string }> = {
+  am: { suffix: "", label: "weekday morning", hours: "Weekday morning (trains departing 7–9 am)" },
+  pm: { suffix: "-pm", label: "weekday evening", hours: "Weekday evening (trains departing 5–7:30 pm)" },
+  sat: { suffix: "-sat", label: "Saturday", hours: "Saturday (trains departing 10 am–12 pm)" },
+};
+const matrices = new Map<When, Promise<Matrix>>([["am", loadJson<Matrix>("matrix.json")]]);
+const getMatrix = (when: When) => {
+  if (!matrices.has(when)) matrices.set(when, loadJson<Matrix>(`matrix${WHEN[when].suffix}.json`));
+  return matrices.get(when)!;
+};
+const finders = new Map<When, Promise<RouteFinder>>();
+const getFinder = (when: When, stationCount: number) => {
+  if (!finders.has(when)) {
+    finders.set(when, loadJson<Graph>(`graph${WHEN[when].suffix}.json`).then((g) => new RouteFinder(g, stationCount)));
+  }
+  return finders.get(when)!;
 };
 
 function hexFeatures(hexes: Hex[]) {
@@ -179,7 +191,10 @@ function addMapLayers(stations: Station[], hexes: Hex[]) {
 
 async function start() {
   const [stations] = await Promise.all([stationsPromise, mapLoaded]);
-  let access: Access = new URLSearchParams(location.hash.slice(1)).get("via") === "ride" ? RIDE : WALK;
+  const initial = new URLSearchParams(location.hash.slice(1));
+  let access: Access = initial.get("via") === "ride" ? RIDE : WALK;
+  let when: When = initial.get("when") === "pm" ? "pm" : initial.get("when") === "sat" ? "sat" : "am";
+  let reverse = initial.get("dir") === "from";
   let hexes = buildHexes(stations, access);
   let hexIndex = new Map(hexes.map((h, i) => [h.id, i]));
   basemap.init();
@@ -257,6 +272,8 @@ async function start() {
     if (!dest) return;
     const p = new URLSearchParams({ to: `${dest.lat.toFixed(5)},${dest.lng.toFixed(5)}`, name: dest.label });
     if (access.id !== "walk") p.set("via", access.id);
+    if (when !== "am") p.set("when", when);
+    if (reverse) p.set("dir", "from");
     history.replaceState(null, "", `#${p.toString().replace("%2C", ",")}`);
   }
 
@@ -273,6 +290,30 @@ async function start() {
         : "Walk to stations up to 1.5 km away; beyond that, a bike, scooter or e-hailed car up to 4 km at about 20 km/h, plus 4 minutes to get going.";
   }
 
+  function showWhen() {
+    const sync = (id: string, attr: string, current: string, index: number) => {
+      document.querySelectorAll<HTMLButtonElement>(`#${id} button`).forEach((b) => {
+        const on = b.dataset[attr] === current;
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-pressed", String(on));
+      });
+      el(id).style.setProperty("--i", String(index));
+    };
+    sync("when", "when", when, ["am", "pm", "sat"].indexOf(when));
+    sync("dir", "dir", reverse ? "from" : "to", reverse ? 1 : 0);
+    el("when-note").textContent = reverse
+      ? `${WHEN[when].hours}. Shows how long the trip takes from your destination to each area, for example the trip home.`
+      : `${WHEN[when].hours}. Pick "coming back" to see the trip home instead.`;
+  }
+
+  async function setWhen(nextWhen: When, nextReverse: boolean) {
+    if (nextWhen === when && nextReverse === reverse) return;
+    when = nextWhen;
+    reverse = nextReverse;
+    showWhen();
+    await update();
+  }
+
   async function setAccess(next: Access) {
     if (next === access) return;
     access = next;
@@ -286,16 +327,18 @@ async function start() {
   async function update() {
     if (!dest) return;
     breakdownPopup.remove();
-    const matrix = await matrixPromise;
+    const matrix = await getMatrix(when);
     const started = performance.now();
-    result = compute(stations, matrix, hexes, dest.lat, dest.lng, access);
+    result = compute(stations, matrix, hexes, dest.lat, dest.lng, access, reverse);
     hexes.forEach((hex, i) => {
       map.setFeatureState({ source: "hexes", id: hex.id }, { band: bandOf(result!.hexTimes[i]) });
     });
     console.debug(`recomputed in ${(performance.now() - started).toFixed(1)} ms`);
     marker.setLngLat([dest.lng, dest.lat]).addTo(map);
-    summaryEl.textContent = `Train time to ${dest.label}, weekday morning`;
-    el("legend-title").textContent = `Time from each area to ${dest.label}:`;
+    summaryEl.textContent = `Train time ${reverse ? "from" : "to"} ${dest.label}, ${WHEN[when].label}`;
+    el("legend-title").textContent = reverse
+      ? `Time from ${dest.label} to each area:`
+      : `Time from each area to ${dest.label}:`;
     document.querySelectorAll<HTMLButtonElement>("#chips button").forEach((b) => {
       b.classList.toggle("on", b.dataset.chip === dest!.chip);
     });
@@ -324,21 +367,26 @@ async function start() {
     const alight = result.alightAt[board];
     const walkIn = hexes[hexIdx].near.find((n) => n.station === board)!.walk;
     const walkOut = result.destStations.find((d) => d.station === alight)!.walk;
-    const route = (await getFinder(stations.length)).route(board, alight);
+    const finder = await getFinder(when, stations.length);
+    const route = reverse ? finder.route(alight, board) : finder.route(board, alight);
     if (!route) return;
     const html = breakdownHtml({
-      walkToStation: { name: stations[board].name, minutes: walkIn },
+      walkToStation: reverse
+        ? { name: stations[alight].name, minutes: walkOut }
+        : { name: stations[board].name, minutes: walkIn },
       route,
       stationName: (i) => stations[i].name,
-      walkToDestination: { name: dest.label, minutes: walkOut },
+      walkToDestination: reverse
+        ? { name: "this spot", minutes: walkIn }
+        : { name: dest.label, minutes: walkOut },
       total: time,
       verb: access.verb,
     });
     breakdownPopup
       .setLngLat(at)
       .setHTML(
-        `<strong>${Math.round(time)} min from here to ${escapeHtml(dest.label)}</strong>${html}` +
-          `<div class="popup-note">Weekday morning (trains departing 7–9 am). Walks and rides to stations are straight-line estimates; waits are half the average gap between trains.</div>` +
+        `<strong>${Math.round(time)} min ${reverse ? `from ${escapeHtml(dest.label)} to here` : `from here to ${escapeHtml(dest.label)}`}</strong>${html}` +
+          `<div class="popup-note">${WHEN[when].hours}. Walks and rides to stations are straight-line estimates; waits are half the average gap between trains.</div>` +
           `<div class="popup-actions"><button type="button" id="set-dest">Use this spot as my destination</button></div>`,
       )
       .addTo(map);
@@ -465,7 +513,14 @@ async function start() {
   document.querySelectorAll<HTMLButtonElement>("#access button").forEach((b) => {
     b.addEventListener("click", () => void setAccess(b.dataset.access === "ride" ? RIDE : WALK));
   });
+  document.querySelectorAll<HTMLButtonElement>("#when button").forEach((b) => {
+    b.addEventListener("click", () => void setWhen(b.dataset.when as When, reverse));
+  });
+  document.querySelectorAll<HTMLButtonElement>("#dir button").forEach((b) => {
+    b.addEventListener("click", () => void setWhen(when, b.dataset.dir === "from"));
+  });
   showAccess();
+  showWhen();
   el("share").addEventListener("click", async () => {
     const btn = el("share");
     try {
