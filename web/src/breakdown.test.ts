@@ -39,3 +39,17 @@ describe("breakdownHtml", () => {
     expect(escapeHtml(`<a href="x">&`)).toBe("&#60;a href=&#34;x&#34;&#62;&#38;");
   });
 });
+
+describe("breakdownHtml with a feeder bus", () => {
+  it("names the bus on the legs that use it", () => {
+    const html = breakdownHtml({
+      walkToStation: { name: "Surian", minutes: 25, via: "Walk, then bus T117" },
+      route: { total: 10, segments: [{ kind: "ride", line: "KGL", from: 0, to: 1, stops: 3, minutes: 10 }] },
+      stationName: (i) => ["Surian", "Bukit Bintang"][i],
+      walkToDestination: { name: "KLCC", minutes: 14, via: "Bus T200, then walk" },
+      total: 49,
+    });
+    expect(html).toContain("Walk, then bus T117 to Surian");
+    expect(html).toContain("Bus T200, then walk to KLCC");
+  });
+});

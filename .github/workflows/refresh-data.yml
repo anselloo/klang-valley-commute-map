@@ -22,6 +22,8 @@ jobs:
           python-version: "3.12"
       - name: Rebuild stations, matrices and graphs
         run: python scripts/build_matrix.py --refresh
+      - name: Rebuild the feeder bus links
+        run: python scripts/build_feeder.py --refresh
       - name: Rebuild the train network data
         run: python scripts/build_network.py
       - name: Check the new data before publishing it

@@ -8,5 +8,5 @@ const src = join(here, "..", "..", "data");
 const dest = join(here, "..", "public", "data");
 mkdirSync(dest, { recursive: true });
 for (const f of readdirSync(src)) {
-  if (/^(stations|matrix.*|graph.*|network|meta)\.json$/.test(f)) copyFileSync(join(src, f), join(dest, f));
+  if (/^(stations|matrix.*|graph.*|feeder.*|network|meta)\.json$/.test(f)) copyFileSync(join(src, f), join(dest, f));
 }

@@ -8,7 +8,7 @@ const WALK_KMH = 4.5;
 
 /** How people get between a place and a station. */
 export interface Access {
-  id: "walk" | "ride";
+  id: "walk" | "bus" | "ride";
   /** Furthest station, in straight-line km. */
   radiusKm: number;
   /** Neighbour rings to scan around a station; res-8 cell centres are ~0.9 km apart. */
@@ -19,6 +19,11 @@ export interface Access {
   reach: string;
 }
 export const WALK: Access = { id: "walk", radiusKm: WALK_RADIUS_KM, rings: 3, verb: "Walk", reach: "a 1.5 km walk" };
+/** Walking, plus feeder buses: a stop within BUS_STOP_KM is a way onto the rail network. */
+export const BUS: Access = { id: "bus", radiusKm: WALK_RADIUS_KM, rings: 3, verb: "Walk", reach: "a 1.5 km walk or a feeder bus" };
+export const BUS_STOP_KM = 0.5;
+/** A feeder bus stop: lat, lon, and the stations it reaches [station, minutes to it, minutes from it, route]. */
+export type FeederStop = [number, number, [number, number, number, string][]];
 /** Bike, scooter or e-hailing to the station. Short distances are still walked. */
 export const RIDE: Access = { id: "ride", radiusKm: 4, rings: 6, verb: "Walk or e-hail", reach: "a 4 km ride" };
 const RIDE_KMH = 20; // door to door in city traffic, once the vehicle is found
@@ -54,12 +59,20 @@ export function bandOf(minutes: number): number {
   return BAND_LIMITS.length;
 }
 
+export interface Near {
+  station: number;
+  walk: number;
+  back?: number;
+  via?: string;
+}
+
 export interface Hex {
   id: string;
   lat: number;
   lon: number;
-  /** Stations within walking range: index and walking minutes. */
-  near: { station: number; walk: number }[];
+  /** Ways onto the rail network: the station, minutes to reach it, and minutes from it back to here
+   *  (when different), plus the bus route when a feeder bus is used. */
+  near: Near[];
 }
 
 export interface Result {
@@ -71,12 +84,12 @@ export interface Result {
   hexTimes: Float64Array;
   /** The station each hex's best trip starts from. */
   boardAt: Int32Array;
-  /** Stations within walking range of the destination. */
-  destStations: { station: number; walk: number }[];
+  /** Ways onto the rail network from the destination, with the minutes for the leg the trip uses. */
+  destStations: { station: number; walk: number; via?: string }[];
 }
 
 /** The H3 grid of hexes that have at least one station in walking range. */
-export function buildHexes(stations: Station[], access: Access = WALK): Hex[] {
+export function buildHexes(stations: Station[], access: Access = WALK, feeder: FeederStop[] = []): Hex[] {
   const byId = new Map<string, Hex>();
   stations.forEach((s, station) => {
     const origin = latLngToCell(s.lat, s.lon, H3_RESOLUTION);
@@ -90,6 +103,21 @@ export function buildHexes(stations: Station[], access: Access = WALK): Hex[] {
       hex.near.push({ station, walk });
     }
   });
+  if (access.id === "bus") {
+    for (const [lat, lon, links] of feeder) {
+      for (const id of gridDisk(latLngToCell(lat, lon, H3_RESOLUTION), 2)) {
+        const [hlat, hlon] = cellToLatLng(id);
+        const km = haversineKm(hlat, hlon, lat, lon);
+        if (km > BUS_STOP_KM) continue;
+        let hex = byId.get(id);
+        if (!hex) byId.set(id, (hex = { id, lat: hlat, lon: hlon, near: [] }));
+        const walk = walkMinutes(km);
+        for (const [station, to, from, route] of links) {
+          hex.near.push({ station, walk: walk + to, back: walk + from, via: route });
+        }
+      }
+    }
+  }
   return [...byId.values()];
 }
 
@@ -98,13 +126,22 @@ export function stationsNear(
   lat: number,
   lon: number,
   access: Access = WALK,
-): { station: number; walk: number }[] {
-  const out: { station: number; walk: number }[] = [];
+  feeder: FeederStop[] = [],
+): Near[] {
+  const out: Near[] = [];
   stations.forEach((s, station) => {
     const km = haversineKm(lat, lon, s.lat, s.lon);
     const walk = accessMinutes(km, access);
     if (walk !== null) out.push({ station, walk });
   });
+  if (access.id === "bus") {
+    for (const [slat, slon, links] of feeder) {
+      const km = haversineKm(lat, lon, slat, slon);
+      if (km > BUS_STOP_KM) continue;
+      const walk = walkMinutes(km);
+      for (const [station, to, from, route] of links) out.push({ station, walk: walk + to, back: walk + from, via: route });
+    }
+  }
   return out;
 }
 
@@ -121,9 +158,16 @@ export function compute(
   access: Access = WALK,
   /** True for "coming from the destination": times from it to each place instead of to it. */
   reverse = false,
+  feeder: FeederStop[] = [],
 ): Result {
   const n = stations.length;
-  const destStations = stationsNear(stations, destLat, destLon, access);
+  // The destination end: going there, the trip leaves the rail network by the "from" leg; coming
+  // back, it starts by the "to" leg.
+  const destStations = stationsNear(stations, destLat, destLon, access, feeder).map((d) => ({
+    station: d.station,
+    walk: reverse ? d.walk : (d.back ?? d.walk),
+    via: d.via,
+  }));
   const stationTimes = new Float64Array(n).fill(Infinity);
   const alightAt = new Int32Array(n).fill(-1);
   for (let s = 0; s < n; s++) {
@@ -141,8 +185,9 @@ export function compute(
   const hexTimes = new Float64Array(hexes.length).fill(Infinity);
   const boardAt = new Int32Array(hexes.length).fill(-1);
   hexes.forEach((hex, i) => {
-    for (const { station, walk } of hex.near) {
-      const total = walk + stationTimes[station];
+    for (const near of hex.near) {
+      const { station } = near;
+      const total = (reverse ? (near.back ?? near.walk) : near.walk) + stationTimes[station];
       if (total < hexTimes[i]) {
         hexTimes[i] = total;
         boardAt[i] = station;

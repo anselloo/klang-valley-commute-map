@@ -42,6 +42,7 @@ PERIODS = [
     ("am", WINDOW, g.WEEKDAYS, ""),
     ("pm", (17 * 60, 19 * 60 + 30), g.WEEKDAYS, "-pm"),
     ("sat", (10 * 60, 12 * 60), ["saturday"], "-sat"),
+    ("sun", (10 * 60, 12 * 60), ["sunday"], "-sun"),
 ]
 FALLBACK_PAD = 60  # stops with no departure in the window use the window padded by this much
 TRANSFER_PENALTY = 5.0

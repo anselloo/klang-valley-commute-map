@@ -194,6 +194,23 @@ await page.click("#dir button[data-dir='to']");
 await page.waitForTimeout(1200);
 ok("back to the morning", /Train time to .+, weekday morning/.test(await text("summary")));
 
+// Feeder buses and Sunday.
+await page.evaluate(() => window.__map.jumpTo({ center: [101.6869, 3.139], zoom: 10.5 }));
+await page.click("#access button[data-access='walk']");
+await page.waitForTimeout(2500);
+const walkOnly = await reach();
+await page.click("#access button[data-access='bus']");
+await page.waitForTimeout(3000);
+const busHexes = await reach();
+ok("feeder buses cover more than walking alone", busHexes > walkOnly * 1.1, `${walkOnly} -> ${busHexes}`);
+ok("address records the bus option", (await page.evaluate(() => location.hash)).includes("via=bus"));
+await page.click("#when button[data-when='sun']");
+await page.waitForTimeout(2500);
+ok("Sunday works with feeder buses", (await text("summary")).includes("Sunday"), await text("summary"));
+await page.click("#when button[data-when='am']");
+await page.click("#access button[data-access='walk']");
+await page.waitForTimeout(1500);
+
 console.log(errors.length ? "ERRORS: " + errors.join(" | ") : "no page errors");
 await browser.close();
 if (failed || errors.length) {

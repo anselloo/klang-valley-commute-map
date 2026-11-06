@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { haversineKm, RIDE, WALK, accessMinutes, buildHexes, compute } from "./model";
+import { BUS, haversineKm, RIDE, WALK, accessMinutes, buildHexes, compute, type FeederStop } from "./model";
 import type { Station } from "./types";
 
 const read = <T>(name: string) =>
@@ -153,5 +153,41 @@ describe("KLIA Ekspres and Transit", () => {
   });
   it("puts the airport stations on the map", () => {
     for (const name of ["KLIA", "KLIA2", "Salak Tinggi"]) expect(idsOf(name).length, name).toBe(1);
+  });
+});
+
+describe("feeder buses", () => {
+  const feeder = JSON.parse(readFileSync(new URL("../../data/feeder.json", import.meta.url), "utf-8")) as FeederStop[];
+
+  it("links many bus stops to rail stations with believable times", () => {
+    expect(feeder.length).toBeGreaterThan(1000);
+    for (const [lat, lon, links] of feeder) {
+      expect(lat).toBeGreaterThan(2.5);
+      expect(lon).toBeGreaterThan(100.9);
+      for (const [station, to, from, route] of links) {
+        expect(station).toBeLessThan(stations.length);
+        expect(to).toBeGreaterThan(2);
+        expect(to).toBeLessThan(120);
+        expect(from).toBeLessThan(120);
+        expect(route.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("reaches places that walking cannot, and never makes walking worse", () => {
+    const walkHexes = buildHexes(stations, WALK);
+    const busHexes = buildHexes(stations, BUS, feeder);
+    expect(busHexes.length).toBeGreaterThan(walkHexes.length);
+    expect(busHexes.some((h) => h.near.some((n) => n.via))).toBe(true);
+    const s = stations.find((x) => x.name === "KL Sentral")!;
+    const walk = compute(stations, matrix, walkHexes, s.lat, s.lon, WALK);
+    const bus = compute(stations, matrix, busHexes, s.lat, s.lon, BUS, false, feeder);
+    const under = (r: typeof walk) => [...r.hexTimes].filter((t) => t < 60).length;
+    expect(under(bus)).toBeGreaterThan(under(walk));
+    const ids = new Map(walkHexes.map((h, i) => [h.id, i]));
+    busHexes.forEach((h, i) => {
+      const w = ids.get(h.id);
+      if (w !== undefined) expect(bus.hexTimes[i]).toBeLessThanOrEqual(walk.hexTimes[w] + 1e-9);
+    });
   });
 });
