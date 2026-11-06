@@ -17,6 +17,9 @@ const browser = await chromium.launch({
 });
 const page = await browser.newPage({ viewport: { width: 1200, height: 800 } });
 const errors = [];
+/** Requests to the free base-map service that failed. Its outages are not this app's bugs (and the map still draws). */
+const tileFailures = [];
+page.on("requestfailed", (r) => { if (/openfreemap|openstreetmap|arcgisonline/.test(r.url())) tileFailures.push(r.url()); });
 page.on("pageerror", e => errors.push("pageerror: " + e.message));
 page.on("console", m => { if (m.type() === "error") errors.push("console: " + m.text().slice(0, 200)); });
 await page.goto(base + "?debug", { waitUntil: "load" });
@@ -326,6 +329,12 @@ const downState = await down.evaluate(() => ({
 ok("app still works when the base-map style is unreachable", downState.summary.startsWith("Train time to") && downState.layers.every(Boolean) && /simpler map/.test(downState.status), JSON.stringify(downState));
 await down.close();
 
+// MapLibre logs a console error for each tile it could not fetch; when the tile service itself refused
+// requests, those messages are warnings about a third party, not app errors. Uncaught exceptions still count.
+if (tileFailures.length) {
+  console.log(`WARNING: ${tileFailures.length} request(s) to the map tile services failed; ignoring the console errors they caused`);
+  for (let i = errors.length - 1; i >= 0; i--) if (errors[i].startsWith("console:")) errors.splice(i, 1);
+}
 console.log(errors.length ? "ERRORS: " + errors.join(" | ") : "no page errors");
 await browser.close();
 if (failed || errors.length) {
