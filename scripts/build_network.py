@@ -27,6 +27,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import gtfs_check as g
+from build_matrix import ZERO_DWELL_FIX_MIN
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
@@ -205,7 +206,11 @@ def main():
                 rows = sorted(times[t["trip_id"]], key=lambda r: int(r["stop_sequence"]))
                 idxs, d, arr, dep, ok = [], [], [], [], True
                 t0 = to_sec(rows[0]["arrival_time"])
-                for r in rows:
+                # A timetable with no dwell time at any stop (the Putrajaya Line's): add the standard
+                # dwell, as build_matrix.py does, so the trains and the travel times agree.
+                no_dwell = len(rows) > 2 and all(r["arrival_time"] == r["departure_time"] for r in rows[1:-1])
+                shift = 0
+                for k, r in enumerate(rows):
                     s = stops[r["stop_id"]]
                     si = station_of(float(s["stop_lon"]), float(s["stop_lat"]))
                     if si is None or r["stop_id"] not in dist_of:
@@ -213,8 +218,10 @@ def main():
                         break
                     idxs.append(si)
                     d.append(dist_of[r["stop_id"]])
-                    arr.append(to_sec(r["arrival_time"]) - t0)
-                    dep.append(to_sec(r["departure_time"]) - t0)
+                    if no_dwell and k > 0:
+                        shift += round(ZERO_DWELL_FIX_MIN * 60) if k > 1 else 0
+                    arr.append(to_sec(r["arrival_time"]) - t0 + shift)
+                    dep.append(to_sec(r["departure_time"]) - t0 + shift + (round(ZERO_DWELL_FIX_MIN * 60) if no_dwell and 0 < k < len(rows) - 1 else 0))
                 if not ok:
                     warnings.append(f"{rid}: trip {t['trip_id']} skipped (stop not matched)")
                     continue

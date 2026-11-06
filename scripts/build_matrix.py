@@ -52,6 +52,11 @@ BUS_SAVING_MIN = 3.0
 # waits of an hour or more. Riders of those check the timetable, so cap the average gap used for
 # waiting at 40 minutes, i.e. a 20 minute wait at most.
 MAX_HEADWAY = 40.0
+# The Putrajaya Line's timetable has no dwell time at any stop (arrival equals departure everywhere),
+# unlike every other Prasarana line (18 to 29 seconds). Its 36 stops make the end-to-end run 68 minutes
+# against the 84 Rapid KL publishes. Adding the Kajang Line's measured mean dwell (0.48 min) at the 34
+# middle stops gives 84.5. Applied to any Prasarana route that shows the same gap.
+ZERO_DWELL_FIX_MIN = 0.48
 SERVICE_DAY_MIN = 17 * 60  # 05:00 to 22:00, for stops with no train in the morning window
 
 
@@ -60,13 +65,14 @@ def to_min(t):
     return h * 60 + m + s / 60
 
 
-def line_data(feed, zf, route_filter, window, days=g.WEEKDAYS):
+def line_data(feed, zf, route_filter, window, days=g.WEEKDAYS, dwell_fix=False):
     """Extract line edges and headways for one feed.
 
     Returns (route_names, edges, headway, stop_rows) where
       edges[(rkey, dir)][(stop_a, stop_b)] -> minutes between consecutive stops
       headway[(rkey, dir, stop)]           -> average headway in minutes
-    Stop ids are prefixed with the feed name.
+    Stop ids are prefixed with the feed name. With `dwell_fix`, a route whose timetable has no dwell
+    time at its stops at all gets ZERO_DWELL_FIX_MIN added at every stop but the first (see there).
     """
     window_start, window_end = window
     routes = {r["route_id"]: r for r in g.read_table(zf, "routes.txt") if route_filter(r)}
@@ -93,14 +99,19 @@ def line_data(feed, zf, route_filter, window, days=g.WEEKDAYS):
     dep_counts_wide = defaultdict(int)
     dep_counts_day = defaultdict(int)  # last resort: any time of day
     freq_headway = {}
+    no_dwell = {}  # route key -> its timetable has no dwell time at any middle stop
 
     for trip_id, trip in trips.items():
         rkey, direction = f"{feed}:{trip['route_id']}", trip.get("direction_id", "0")
         line = (rkey, direction)
         rows = sorted(seqs.get(trip_id, ()), key=lambda r: int(r["stop_sequence"]))
-        for a, b in zip(rows, rows[1:]):
+        if dwell_fix and rkey not in no_dwell:
+            no_dwell[rkey] = len(rows) > 2 and all(r["arrival_time"] == r["departure_time"] for r in rows[1:-1])
+        for idx, (a, b) in enumerate(zip(rows, rows[1:])):
             sa, sb = f"{feed}:{a['stop_id']}", f"{feed}:{b['stop_id']}"
             dur = to_min(b["arrival_time"]) - to_min(a["arrival_time"])
+            if no_dwell.get(rkey) and idx > 0:
+                dur += ZERO_DWELL_FIX_MIN
             in_win = window_start - 30 <= to_min(a["departure_time"]) <= window_end + 30
             edge_samples[line][(sa, sb)][0 if in_win else 1].append(dur)
         if trip_id in freqs:
@@ -238,7 +249,7 @@ def main():
     edges, headway = {}, {}
     for feed, filt in (("prasarana", g.prasarana_filter), ("ktmb", g.ktmb_filter)):
         with zipfile.ZipFile(g.FEEDS[feed][1]) as zf:
-            n, e, h, s = line_data(feed, zf, filt, WINDOW)
+            n, e, h, s = line_data(feed, zf, filt, WINDOW, dwell_fix=(feed == "prasarana"))
         route_names.update(n)
         edges.update(e)
         headway.update(h)
@@ -407,7 +418,7 @@ def main():
         e2, h2 = {}, {}
         for feed, filt in (("prasarana", g.prasarana_filter), ("ktmb", g.ktmb_filter)):
             with zipfile.ZipFile(g.FEEDS[feed][1]) as zf:
-                _, e, h, _ = line_data(feed, zf, filt, window, days)
+                _, e, h, _ = line_data(feed, zf, filt, window, days, dwell_fix=(feed == "prasarana"))
             e2.update(e)
             h2.update(h)
         add_erl({}, e2, h2, dict(stop_rows), name)

@@ -27,13 +27,28 @@ Model figures are station to station (they include the average wait) and come fr
 | Subang Jaya | KL Sentral | 36 | | KJL, many stops |
 | Gombak | KL Sentral | 39 | | KJL |
 | Kajang | KL Sentral | 54 | | MRT then change |
-| Sungai Buloh | Bukit Bintang | 43 | | MRT, one line |
+| Sungai Buloh | Bukit Bintang | 51 | | MRT, one line |
 | Ampang | KLCC | 34 (19 with Bus) | | LRT then change; with the Bus choice, bus 300 straight there |
 | Putra Heights | KL Sentral | 55 | | longest single-line trip |
 | Klang | KL Sentral | 81 | | KTM Komuter, sparse trains |
 | KL Sentral | KLIA | 36 | | KLIA Ekspres, 28 min ride plus wait |
 | KL Sentral | KLIA2 | 41 | | KLIA Ekspres |
 | Putrajaya Sentral | KLIA | 24 | | KLIA Transit |
+
+## Checked without Google Maps
+
+- **Putrajaya Line end to end: fixed.** Paultan quotes Rapid KL as saying Kwasa Damansara to Putrajaya
+  Sentral takes [84 minutes](https://paultan.org/2023/03/15/mrt-putrajaya-line-opens-tomorrow-weve-tried-it-heres-our-experience-and-guide-to-kvs-new-rail-line).
+  The line's timetable data gave 68. The cause: that timetable has no dwell time at any stop (arrival equals
+  departure everywhere), while every other Prasarana line has 18 to 29 seconds. Adding the Kajang Line's
+  measured 0.48 minutes at the 34 middle stops gives 84.5, so the build now does that
+  (`ZERO_DWELL_FIX_MIN` in `scripts/build_matrix.py`; the train view gets the same dwell). A test keeps it
+  between 80 and 88.
+- **Kajang Line:** the model's 88 minutes matches the MyMRT project page; other sources quoted 70 and 75
+  with unclear endpoints, so no conclusion.
+- **Not checked:** the Kelana Jaya, Ampang and Sri Petaling lines and KTM Komuter have no published
+  end-to-end time I could find. KTM's timetable also has equal arrival and departure times at stops, but
+  I have no figure to tell whether that is wrong, so it is unchanged.
 
 ## Known limits of the model (not bugs)
 

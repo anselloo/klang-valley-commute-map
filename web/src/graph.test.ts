@@ -56,3 +56,43 @@ describe("bus journeys between stations", () => {
     if (seg && seg.kind === "bus") expect(seg.routes.length).toBeGreaterThan(0);
   });
 });
+
+describe("line run times against published figures", () => {
+  const graph = read<Graph>("graph.json");
+
+  /** End-to-end minutes along a line, following ride edges from a line's first stop. */
+  function endToEnd(lineName: string): number {
+    const li = graph.lines.indexOf(lineName);
+    const out = new Map<number, [number, number][]>();
+    const hasIn = new Set<number>();
+    for (const [a, b, d] of graph.rides) {
+      out.set(a, [...(out.get(a) ?? []), [b, d]]);
+      hasIn.add(b);
+    }
+    let best = 0;
+    graph.nodes.forEach(([, l], i) => {
+      if (l !== li || hasIn.has(i)) return;
+      let total = 0;
+      for (let cur = i; out.get(cur)?.length; ) {
+        const [next, d] = out.get(cur)![0];
+        total += d;
+        cur = next;
+      }
+      best = Math.max(best, total);
+    });
+    return best;
+  }
+
+  it("the Putrajaya Line takes about 84 minutes end to end, as Rapid KL says", () => {
+    // The timetable has no dwell time at its stops; the build adds it. Without it this is 68.
+    const t = endToEnd("PYL");
+    expect(t).toBeGreaterThan(80);
+    expect(t).toBeLessThan(88);
+  });
+
+  it("the Kajang Line takes about 88 minutes end to end", () => {
+    const t = endToEnd("KGL");
+    expect(t).toBeGreaterThan(84);
+    expect(t).toBeLessThan(92);
+  });
+});
