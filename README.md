@@ -52,6 +52,7 @@ npm run build && npm run preview        # production build
 scripts/     Python build step (gtfs_check.py, build_matrix.py)
 data/        generated stations.json, matrix-*.json, graph-*.json, and hand-made transfers.json
 web/         Vite + TypeScript frontend (MapLibre GL JS, h3-js)
+docs/        README screenshot
 .github/     workflows: deploy to Pages, monthly data refresh
 SPEC.md      the v1 spec
 ```
