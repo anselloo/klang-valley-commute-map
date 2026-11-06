@@ -316,20 +316,20 @@ export class NetworkView {
       [point.x - pad, point.y - pad],
       [point.x + pad, point.y + pad],
     ];
-    // A train that is stopped sits right on top of its station's dot, so choose whichever is nearer
-    // to the tap, with a small bias towards stations (they never move, trains are easy to re-tap).
-    const STATION_BIAS_PX = 8;
+    // A train stopped at a station sits right on top of its dot, so there the station should win a
+    // close call. A moving train is a deliberate target: it only loses if a station is nearer the tap.
+    const STOPPED_PENALTY_PX = 8;
     const distance = (f: maplibregl.MapGeoJSONFeature) => {
       const [lon, lat] = (f.geometry as unknown as { coordinates: [number, number] }).coordinates;
       const p = this.map.project([lon, lat]);
       return Math.hypot(p.x - point.x, p.y - point.y);
     };
-    const nearest = (layer: string, bias: number) => {
+    const nearest = (layer: string, penalty: (f: maplibregl.MapGeoJSONFeature) => number) => {
       const feats = this.map.queryRenderedFeatures(box, { layers: [layer] });
-      return feats.map((f) => ({ f, d: distance(f) - bias })).sort((x, y) => x.d - y.d)[0];
+      return feats.map((f) => ({ f, d: distance(f) + penalty(f) })).sort((x, y) => x.d - y.d)[0];
     };
-    const train = nearest("net-trains", 0);
-    const station = nearest("station-dots", STATION_BIAS_PX);
+    const train = nearest("net-trains", (f) => (f.properties.stopped === 1 ? STOPPED_PENALTY_PX : 0));
+    const station = nearest("station-dots", () => 0);
     if (train && (!station || train.d < station.d)) {
       this.selectStation(null);
       this.followTripNow(Number(train.f.properties.trip));
