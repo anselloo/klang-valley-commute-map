@@ -9,6 +9,8 @@ export interface NetLine {
   id: string;
   name: string;
   longName: string;
+  /** Short text for the line badge, when the name is long (the airport trains). */
+  code?: string;
   mode: string;
   color: string;
   /** Index into `shapes` (lines with published track geometry). */

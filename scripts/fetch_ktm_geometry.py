@@ -33,6 +33,7 @@ RAW = ROOT / "data" / "raw" / "ktm_geom.json"
 RELATIONS = {
     "Port Klang Line": 2565937,   # Pelabuhan Klang -> Tanjung Malim
     "Seremban Line": 9985624,     # Batu Caves -> Pulau Sebang/Tampin
+    "KLIA Transit": 8119876,      # KL Sentral -> klia2; the KLIA Ekspres runs on the same track
 }
 MIRRORS = [
     "https://lz4.overpass-api.de/api/interpreter",

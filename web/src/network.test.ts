@@ -105,10 +105,10 @@ describe("the real network", () => {
     expect(net.trainsAt(3 * 3600)).toHaveLength(0);
   });
 
-  it("keeps every train inside the Klang Valley, all day", () => {
+  it("keeps every train inside the Klang Valley (and the airport line), all day", () => {
     for (let t = 5 * 3600; t < 25 * 3600; t += 1700) {
       for (const tr of net.trainsAt(t % 86400)) {
-        expect(tr.lat).toBeGreaterThan(2.78);
+        expect(tr.lat).toBeGreaterThan(2.72);
         expect(tr.lat).toBeLessThan(3.42);
         expect(tr.lon).toBeGreaterThan(101.33);
         expect(tr.lon).toBeLessThan(101.92);

@@ -1,15 +1,16 @@
 {
-  "_note": "KLIA Ekspres and KLIA Transit (ERL) are not in the Prasarana or KTMB feeds, so they are entered by hand. Stop positions are from OpenStreetMap (ODbL). Ride minutes and headways are approximate figures from ERL's published timetable (KLIA Ekspres: KL Sentral to KLIA 28 min, to klia2 33 min, a train about every 20 minutes; KLIA Transit: to KLIA 36 min, to klia2 39 min, about every 30 minutes) and are worth checking against the current timetable. Stops with a 'join' reuse the position of the existing station of that name, so they become one interchange.",
+  "_note": "KLIA Ekspres and KLIA Transit (ERL) are in neither the Prasarana nor the KTMB feed, so they are entered by hand. Stop positions are from OpenStreetMap (ODbL). Ride minutes and headways come from ERL's published timetable (kliaekspres.com, schedule of 1 Aug 2023): KLIA Ekspres runs every 15 minutes in weekday peak hours and every 20 minutes otherwise, taking 28 minutes to KLIA T1 and 33 to klia2; KLIA Transit takes 36 and 39 minutes. Transit's frequency (15 minutes in weekday peaks, 30 otherwise) is from ERL's 2022-23 announcements and is the least certain figure. Re-check against the current timetable. Stops with a 'join' reuse the position of the existing station of that name, so they become one interchange; 'lat'/'lon' on those are only used to match the station in the train view.",
+  "service": {"first": 18000, "last": 86400, "peaks": [[25200, 34200], [61200, 72000]]},
   "stops": {
-    "KLS": {"name": "KL Sentral", "join": "KL Sentral"},
-    "BTS": {"name": "Bandar Tasik Selatan", "join": "Bandar Tasik Selatan"},
-    "PJC": {"name": "Putrajaya Sentral", "join": "Putrajaya Sentral"},
+    "KLS": {"name": "KL Sentral", "join": "KL Sentral", "lat": 3.134336, "lon": 101.686204},
+    "BTS": {"name": "Bandar Tasik Selatan", "join": "Bandar Tasik Selatan", "lat": 3.076115, "lon": 101.711111},
+    "PJC": {"name": "Putrajaya Sentral", "join": "Putrajaya Sentral", "lat": 2.9313, "lon": 101.6715},
     "SAT": {"name": "Salak Tinggi", "lat": 2.825397, "lon": 101.713075},
     "KT1": {"name": "KLIA", "lat": 2.754733, "lon": 101.704640},
     "KT2": {"name": "KLIA2", "lat": 2.744527, "lon": 101.685180}
   },
   "lines": [
-    {"name": "KLIA Ekspres", "headway": 20, "stops": ["KLS", "KT1", "KT2"], "minutes": [28, 5]},
-    {"name": "KLIA Transit", "headway": 30, "stops": ["KLS", "BTS", "PJC", "SAT", "KT1", "KT2"], "minutes": [7, 13, 8, 8, 3]}
+    {"name": "KLIA Ekspres", "code": "ERL", "color": "#c8102e", "headway": {"peak": 15, "offpeak": 20}, "stops": ["KLS", "KT1", "KT2"], "minutes": [28, 5]},
+    {"name": "KLIA Transit", "code": "ERL", "color": "#00857c", "headway": {"peak": 15, "offpeak": 30}, "stops": ["KLS", "BTS", "PJC", "SAT", "KT1", "KT2"], "minutes": [7, 13, 8, 8, 3]}
   ]
 }

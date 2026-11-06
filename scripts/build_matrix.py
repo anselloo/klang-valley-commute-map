@@ -181,7 +181,7 @@ def display_name(name):
     )
 
 
-def add_erl(route_names, edges, headway, stop_rows):
+def add_erl(route_names, edges, headway, stop_rows, period="am"):
     """Add KLIA Ekspres / KLIA Transit from data/erl.json (they are in neither GTFS feed).
 
     Mutates the dicts in place, using the same shapes as line_data. Stops marked "join" take the
@@ -207,7 +207,8 @@ def add_erl(route_names, edges, headway, stop_rows):
         for direction, order, gaps in (("0", ids, line["minutes"]), ("1", ids[::-1], line["minutes"][::-1])):
             edges[(rkey, direction)] = {(a, b): float(m) for (a, b), m in zip(zip(order, order[1:]), gaps)}
             for stop in order:
-                headway[(rkey, direction, stop)] = float(line["headway"])
+                # Weekday mornings and evenings are the peaks; Saturday and Sunday are off-peak.
+                headway[(rkey, direction, stop)] = float(line["headway"]["peak" if period in ("am", "pm") else "offpeak"])
 
 
 def write_meta():
@@ -374,7 +375,7 @@ def main():
                 _, e, h, _ = line_data(feed, zf, filt, window, days)
             e2.update(e)
             h2.update(h)
-        add_erl({}, e2, h2, dict(stop_rows))
+        add_erl({}, e2, h2, dict(stop_rows), name)
         m2, g2 = solve(e2, h2)
         (DATA_DIR / f"matrix{suffix}.json").write_text(json.dumps(m2, separators=(",", ":")), encoding="utf-8")
         (DATA_DIR / f"graph{suffix}.json").write_text(json.dumps(g2, separators=(",", ":")), encoding="utf-8")

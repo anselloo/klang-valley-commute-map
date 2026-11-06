@@ -167,6 +167,7 @@ await shared.close();
 ok("data date is shown", /Timetable data built \d/.test(await text("data-info")), await text("data-info"));
 await page.click("#modes button[data-mode='network']");
 await page.waitForTimeout(1500);
+ok("airport lines are in the train network", /KLIA Ekspres/.test(await text("net-lines")) && /KLIA Transit/.test(await text("net-lines")));
 ok("network view says it is simulated", /Simulated from the published timetable/.test(await text("net-note")));
 
 // Search finds a station by name without the network.

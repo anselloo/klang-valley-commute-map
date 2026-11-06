@@ -21,11 +21,11 @@ const ICON_PLAY = `<svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 /** Short code for a line's badge: the line's own name when short (KJL), otherwise "KTM". */
-const lineCode = (name: string) => (name.length <= 4 ? name : "KTM");
+const lineCode = (name: string, code?: string) => code ?? (name.length <= 4 ? name : "KTM");
 /** The wording that goes next to the badge when the badge alone does not name the line. */
 const lineSuffix = (name: string) => (name.length <= 4 ? "" : `${escapeHtml(name)} `);
-const badge = (name: string, color: string) =>
-  `<span class="badge" style="background:${color};color:${readableText(color)}">${escapeHtml(lineCode(name))}</span>`;
+const badge = (name: string, color: string, code?: string) =>
+  `<span class="badge" style="background:${color};color:${readableText(color)}">${escapeHtml(lineCode(name, code))}</span>`;
 const minutesText = (seconds: number) =>
   seconds < 30 ? "now" : seconds < 90 ? "1 min" : `${Math.round(seconds / 60)} min`;
 
@@ -80,7 +80,7 @@ function arrowImage(color: string): ImageData {
 }
 
 const NET_NOTE =
-  "Simulated from the published timetable, not live positions. Prasarana trains are spaced by the timetable's average gap, so a real train can be a few minutes off. KLIA Ekspres and KLIA Transit count in the commute map but are not drawn here.";
+  "Simulated from the published timetable, not live positions. Prasarana trains are spaced by the timetable's average gap, so a real train can be a few minutes off.";
 
 /** Seconds since midnight in Kuala Lumpur, whatever timezone the visitor's device is in. */
 function malaysiaNow(): { seconds: number; weekend: boolean } {
@@ -335,8 +335,8 @@ export class NetworkView {
       .map(
         (l, i) =>
           `<li><button type="button" class="line-row" data-line="${i}">` +
-          badge(l.name, l.color) +
-          `<span class="line-name">${escapeHtml(l.mode === "KTM Komuter" ? l.name : l.longName)} <span class="small">${escapeHtml(l.mode)}</span></span>` +
+          badge(l.name, l.color, l.code) +
+          `<span class="line-name">${escapeHtml(l.mode === "KTM Komuter" || l.mode === "Airport rail" ? l.name : l.longName)} <span class="small">${escapeHtml(l.mode)}</span></span>` +
           `<span class="line-count" id="line-count-${i}"></span></button></li>`,
       )
       .join("");
@@ -552,7 +552,7 @@ export class NetworkView {
       return {
         peek: `${line.name} to ${dest.name}: ${followed.stopped ? `stopped at ${stop.name}` : `next ${stop.name} in ${minutesText(followed.secondsToNext)}`}`,
         html:
-          `<div class="card"><div class="card-title">${badge(line.name, line.color)}` +
+          `<div class="card"><div class="card-title">${badge(line.name, line.color, line.code)}` +
           `<span>${lineSuffix(line.name)}to ${escapeHtml(dest.name)}</span></div>` +
           `<p>${next}</p>` +
           `<div class="card-actions"><button type="button" id="follow-toggle">${this.following ? "Stop following" : "Follow this train"}</button>` +
@@ -575,14 +575,12 @@ export class NetworkView {
             .slice(0, 8)
             .map(
               (d) =>
-                `<li>${badge(net.lines[d.line].name, net.lines[d.line].color)}` +
+                `<li>${badge(net.lines[d.line].name, net.lines[d.line].color, net.lines[d.line].code)}` +
                 `<span class="dep-text">${lineSuffix(net.lines[d.line].name)}to ${escapeHtml(this.stations[d.destination].name)}</span>` +
                 `<span class="dep-time">${minutesText(d.inSeconds)}</span></li>`,
             )
             .join("")
-        : s.lines.every((l) => l.startsWith("KLIA"))
-          ? `<li class="small">Served by KLIA Ekspres and KLIA Transit, which are not drawn in this view.</li>`
-          : `<li class="small">No departures in the next 40 minutes at this time of day.</li>`;
+        : `<li class="small">No departures in the next 40 minutes at this time of day.</li>`;
       return {
         peek: deps.length
           ? `${s.name}: ${deps.slice(0, 3).map((d) => `${net.lines[d.line].name} to ${this.stations[d.destination].name} ${minutesText(d.inSeconds)}`).join(", ")}`

@@ -307,6 +307,50 @@ def main():
                 line["path"] = patterns[longest]["stops"]
             lines.append(line)
 
+    # ---- KLIA Ekspres / KLIA Transit: hand-entered (data/erl.json), on the OSM track ---------
+    erl = json.loads((DATA_DIR / "erl.json").read_text(encoding="utf-8"))
+    erl_osm = ktm_shapes.get("KLIA Transit")
+    if erl_osm:
+        poly = [(*xy(lon, lat), lon, lat) for lon, lat in erl_osm]
+        poly = [(*xy(round(p[2], 5), round(p[3], 5)), round(p[2], 5), round(p[3], 5)) for p in poly]
+        cum = cumulative(poly)
+        shape_idx = len(shapes_out)
+        shapes_out.append([[p[2], p[3]] for p in poly])
+        station_idx = {}
+        for key, s in erl["stops"].items():
+            si = station_of(s["lon"], s["lat"])
+            if si is None:
+                sys.exit(f"erl.json: no station near {s['name']}")
+            station_idx[key] = si
+        dist_of = {station_idx[k]: round(project_forward(poly, cum, *st_xy[station_idx[k]], 0)[0]) for k in erl["stops"]}
+        svc = erl["service"]
+        for line_def in erl["lines"]:
+            line_idx = len(lines)
+            lines.append({
+                "id": f"erl:{line_def['name']}", "name": line_def["name"], "longName": line_def["name"],
+                "mode": "Airport rail", "color": line_def["color"], "code": line_def["code"], "shape": shape_idx,
+            })
+            order = [station_idx[k] for k in line_def["stops"]]
+            for stops_in_order in (order, order[::-1]):
+                gaps = line_def["minutes"] if stops_in_order is order else line_def["minutes"][::-1]
+                # Published times are arrival to arrival, so a 30 s dwell at each middle stop comes out
+                # of the next leg, not on top of it.
+                arr, t = [0], 0
+                for m in gaps:
+                    t += round(m * 60)
+                    arr.append(t)
+                dep = [a + (30 if 0 < k < len(arr) - 1 else 0) for k, a in enumerate(arr)]
+                pat_idx = len(patterns)
+                patterns.append({"line": line_idx, "shape": shape_idx, "stops": stops_in_order,
+                                 "d": [dist_of[s] for s in stops_in_order], "arr": arr, "dep": dep})
+                s0 = svc["first"]
+                while s0 < svc["last"]:
+                    peak = any(a <= s0 < b for a, b in svc["peaks"])
+                    trips.append([pat_idx, s0])
+                    s0 += 60 * line_def["headway"]["peak" if peak else "offpeak"]
+    else:
+        warnings.append("KLIA Transit track missing from data/ktm_shapes.json; ERL not drawn in the train view")
+
     trips.sort(key=lambda t: (t[1], t[0]))
     network = {"lines": lines, "shapes": shapes_out, "patterns": patterns, "trips": trips}
     out = DATA_DIR / "network.json"
