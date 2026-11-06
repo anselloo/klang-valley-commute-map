@@ -97,7 +97,7 @@ Status as of 2026-11-06: all six are built, pushed and deployed. One item is sti
 ## v2: interactive train network (built)
 An animated view of the rail network on the same map, as a second tab next to the commute map.
 
-- Every train on the weekday timetable moves along its line. Prasarana lines follow the published track shape and are expanded from the published headways; KTM Komuter is drawn as straight lines between stations and uses its real trips, clipped to the Klang Valley. The build step (`scripts/build_network.py`) writes `data/network.json`.
+- Every train on the weekday timetable moves along its line. Prasarana lines follow the published track shape and are expanded from the published headways; KTM Komuter follows its real track, taken from OpenStreetMap because the KTMB feed has no shapes (`scripts/fetch_ktm_geometry.py` saves it to `data/ktm_shapes.json`), and uses its real trips, clipped to the Klang Valley. The build step (`scripts/build_network.py`) writes `data/network.json`.
 - A clock with play/pause, 10×/60×/300× speed, a slider (05:00 to 01:00), and jumps to morning peak, midday, evening peak, late and now.
 - Tap a train to see its line, destination and next stop and follow it with the camera; tap a station for its next departures (and to use it as the commute destination); tap a line to focus on it. Lines draw in when the view opens.
 - Works on a phone: the bottom sheet keeps the tabs, clock, play button and a one-line summary of the selection visible when collapsed.

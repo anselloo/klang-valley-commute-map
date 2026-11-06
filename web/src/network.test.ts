@@ -132,6 +132,21 @@ describe("the real network", () => {
     expect(checked).toBeGreaterThan(200);
   });
 
+  it("every line follows real track geometry, including KTM", () => {
+    for (const line of data.lines) expect(line.shape, line.name).toBeDefined();
+    for (const p of data.patterns) expect(p.shape, `line ${p.line}`).not.toBeNull();
+  });
+
+  it("every pattern moves strictly one way along its track", () => {
+    for (const p of data.patterns) {
+      const d = p.d!;
+      const sign = Math.sign(d[d.length - 1] - d[0]);
+      for (let i = 1; i < d.length; i++) {
+        expect(Math.sign(d[i] - d[i - 1]), `line ${p.line} stop ${i}`).toBe(sign);
+      }
+    }
+  });
+
   it("every line has geometry to draw", () => {
     data.lines.forEach((_, i) => expect(net.lineCoordinates(i).length).toBeGreaterThan(1));
   });

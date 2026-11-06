@@ -11,12 +11,14 @@ and writes data/network.json:
   trips     [pattern index, start second], sorted by start time
 
 Prasarana publishes track geometry and frequencies, so its trains are expanded from the
-frequency table and follow the real shape. KTM Komuter has no geometry, so its patterns are
-drawn as straight lines between stations and its trips are the actual timetable.
+frequency table and follow the real shape. KTM Komuter has no geometry in its feed: its track comes
+from OpenStreetMap (data/ktm_shapes.json, fetched by fetch_ktm_geometry.py) and its trips are the
+actual timetable. If that file is missing, KTM lines fall back to straight segments between stations.
 
 Standard library only. Usage:  python scripts/build_network.py [--refresh]
 """
 import argparse
+import bisect
 import json
 import math
 import sys
@@ -90,6 +92,29 @@ def project_forward(poly, cum, px, py, start_seg):
     return best[1], best[0], best[2]
 
 
+def cumulative(poly):
+    cum = [0.0]
+    for a, b in zip(poly, poly[1:]):
+        cum.append(cum[-1] + math.hypot(b[0] - a[0], b[1] - a[1]))
+    return cum
+
+
+def point_at(poly, cum, d):
+    """Interpolated (x, y, lon, lat) at distance d along the polyline."""
+    d = max(0.0, min(cum[-1], d))
+    i = min(bisect.bisect_right(cum, d) - 1, len(poly) - 2)
+    span = cum[i + 1] - cum[i]
+    t = (d - cum[i]) / span if span else 0.0
+    return tuple(poly[i][k] + t * (poly[i + 1][k] - poly[i][k]) for k in range(4))
+
+
+def trim(poly, cum, lo, hi):
+    """The part of the polyline between distances lo and hi."""
+    lo, hi = max(0.0, lo), min(cum[-1], hi)
+    inner = [p for p, c in zip(poly, cum) if lo < c < hi]
+    return [point_at(poly, cum, lo), *inner, point_at(poly, cum, hi)]
+
+
 def read_shapes(zf):
     shapes = defaultdict(list)
     for r in g.read_table(zf, "shapes.txt"):
@@ -121,6 +146,8 @@ def main():
 
     lines, shapes_out, patterns, trips = [], [], [], []
     warnings = []
+    ktm_shapes_file = DATA_DIR / "ktm_shapes.json"
+    ktm_shapes = json.loads(ktm_shapes_file.read_text(encoding="utf-8"))["shapes"] if ktm_shapes_file.exists() else {}
 
     # ---- Prasarana: real shapes, frequency-based trips -------------------------------------
     with zipfile.ZipFile(g.FEEDS["prasarana"][1]) as zf:
@@ -242,15 +269,43 @@ def main():
                 trips.append([seen[key], t0])
             if not line_patterns:
                 continue  # no Klang Valley service (e.g. the northern lines)
-            longest = max(line_patterns, key=lambda p: len(patterns[p]["stops"]))
-            lines.append({
+            line = {
                 "id": f"ktmb:{rid}",
                 "name": route["route_short_name"],
                 "longName": route["route_long_name"],
                 "mode": "KTM Komuter",
                 "color": "#" + route["route_color"].lstrip("#"),
-                "path": patterns[longest]["stops"],
-            })
+            }
+            osm = ktm_shapes.get(route["route_short_name"])
+            if osm:
+                # Real track from OpenStreetMap (see fetch_ktm_geometry.py). Project each station the
+                # line serves onto it, trim it to the served section, then re-project onto the final
+                # (rounded) polyline so the distances match what the browser will compute.
+                poly = [(*xy(lon, lat), lon, lat) for lon, lat in osm]
+                served = sorted({st for p in line_patterns for st in patterns[p]["stops"]})
+                first = [project_forward(poly, cumulative(poly), *st_xy[st], 0) for st in served]
+                lo = min(d for d, _, _ in first) - 300
+                hi = max(d for d, _, _ in first) + 300
+                poly = trim(poly, cumulative(poly), lo, hi)
+                poly = [(*xy(round(p[2], 5), round(p[3], 5)), round(p[2], 5), round(p[3], 5)) for p in poly]
+                cum = cumulative(poly)
+                dist_of = {}
+                for st in served:
+                    d, off, _ = project_forward(poly, cum, *st_xy[st], 0)
+                    dist_of[st] = round(d)
+                    if off > MAX_STOP_OFFSET_M:
+                        warnings.append(f"{line['name']}: {stations[st]['name']} is {off:.0f} m from the OSM track")
+                shape_idx = len(shapes_out)
+                shapes_out.append([[p[2], p[3]] for p in poly])
+                line["shape"] = shape_idx
+                for p in line_patterns:
+                    patterns[p]["shape"] = shape_idx
+                    patterns[p]["d"] = [dist_of[st] for st in patterns[p]["stops"]]
+            else:
+                warnings.append(f"{line['name']}: no OSM track in data/ktm_shapes.json, drawing straight segments")
+                longest = max(line_patterns, key=lambda p: len(patterns[p]["stops"]))
+                line["path"] = patterns[longest]["stops"]
+            lines.append(line)
 
     trips.sort(key=lambda t: (t[1], t[0]))
     network = {"lines": lines, "shapes": shapes_out, "patterns": patterns, "trips": trips}

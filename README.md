@@ -36,7 +36,7 @@ A Python build step turns the official static GTFS feeds into small JSON files. 
 1. **Build** (`scripts/build_matrix.py`): downloads the feeds, keeps weekday Klang Valley rail, merges stops within 150 m into one station, and runs a shortest-path search from every station. Cost per trip is in-vehicle time, plus half the line's average headway as the first wait, plus half the next line's headway and 5 minutes for each change. A hand-maintained list of out-of-system walking links (`data/transfers.json`) joins stations that are close but not connected in the feeds.
 2. **Browser** (`web/`, commute view): for a destination D, a station's time is the best of `matrix(S, T) + walk(T, D)` over stations T within 1.5 km of D. A hex's time is the best of `walk(H, S) + time(S)` over stations S within 1.5 km. Walking is straight-line distance × 1.3 ÷ 4.5 km/h.
 
-3. **Train network** (`scripts/build_network.py`, `web/src/network.ts`): the build step writes the track geometry and the timetable to `data/network.json`. Prasarana publishes the track shapes and the headway for each part of the day, so its trains are generated from those headways and follow the real track. KTM Komuter has no geometry, so its trains run on straight lines between stations, but they use its real trip times. The browser works out where every train is at the simulated time.
+3. **Train network** (`scripts/build_network.py`, `web/src/network.ts`): the build step writes the track geometry and the timetable to `data/network.json`. Prasarana publishes the track shapes and the headway for each part of the day, so its trains are generated from those headways and follow the real track. The KTMB feed has no track shapes, so the Komuter track comes from OpenStreetMap (`scripts/fetch_ktm_geometry.py` saves it to `data/ktm_shapes.json`, which the build reads offline); KTM trains use the feed's real trip times. The browser works out where every train is at the simulated time.
 
 Times are for weekday mornings, using trains that depart 7–9 am. There is no separate 8:00 / 9:00 option: building one for each showed the two differ by about a minute for a typical trip, which is not worth asking a first-time visitor to choose.
 
@@ -51,6 +51,7 @@ python scripts/gtfs_check.py
 # 2. Rebuild the data in /data (committed, so this is optional)
 python scripts/build_matrix.py          # stations.json, matrix.json, graph.json (add --refresh to re-download the feeds)
 python scripts/build_network.py         # network.json, for the train network view
+python scripts/fetch_ktm_geometry.py    # only if the KTM track changes: refreshes data/ktm_shapes.json from OpenStreetMap
 
 # 3. Run the site
 cd web
@@ -64,7 +65,7 @@ npm run build && npm run preview        # production build
 
 ```
 scripts/     Python build step (gtfs_check.py, build_matrix.py)
-data/        generated stations.json, matrix.json, graph.json, network.json, and hand-made transfers.json
+data/        generated stations.json, matrix.json, graph.json, network.json, ktm_shapes.json (KTM track from OpenStreetMap), and hand-made transfers.json
 web/         Vite + TypeScript frontend (MapLibre GL JS, h3-js)
 docs/        README screenshot
 .github/     workflows: deploy to Pages, monthly data refresh
@@ -82,12 +83,12 @@ SPEC.md      the v1 spec
 - **Estimates, not a journey planner.** Waits are half the average headway, not a real timetable lookup, and walking ignores roads and rivers.
 - **Feed gaps show up.** The KTM feed has long gaps on some lines in the morning peak (for example the Port Klang line), so some KTM stations look slow. The Kelana Jaya line takes about 98 minutes end to end in the Prasarana feed.
 - **Transfer walk times are guesses.** The walks in `data/transfers.json` are estimates and are worth checking on the ground.
-- **The train network is a simulation.** Prasarana trains are generated from published headways, not an exact timetable, so an individual train will not match a real one. KTM lines are drawn straight between stations, and KTM trips that start or end outside the Klang Valley are cut at its edge.
+- **The train network is a simulation.** Prasarana trains are generated from published headways, not an exact timetable, so an individual train will not match a real one. KTM trips that start or end outside the Klang Valley are cut at its edge.
 - **KTM schedule expiry.** The KTM calendar in the feed has an end date; the monthly refresh picks up new schedules.
 
 ## Data and credits
 
 - GTFS static feeds from Malaysia's open data portal, [developer.data.gov.my](https://developer.data.gov.my/): Prasarana (`rapid-rail-kl`) and KTMB.
-- Base map: [OpenFreeMap](https://openfreemap.org/) with [OpenStreetMap](https://www.openstreetmap.org/copyright) data, rendered with [MapLibre GL JS](https://maplibre.org/).
+- Base map: [OpenFreeMap](https://openfreemap.org/) with [OpenStreetMap](https://www.openstreetmap.org/copyright) data, rendered with [MapLibre GL JS](https://maplibre.org/). KTM Komuter track geometry is also © OpenStreetMap contributors (ODbL).
 - Search: [Nominatim](https://nominatim.org/), one request per search.
 - Hex grid: [H3](https://h3geo.org/) via h3-js.
