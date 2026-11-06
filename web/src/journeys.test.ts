@@ -80,7 +80,7 @@ describe("the whole matrix", () => {
 
 describe("access modes", () => {
   it("walks 1 km in about 17 minutes and never beyond 1.5 km", () => {
-    expect(accessMinutes(1, WALK)).toBeCloseTo(17.3, 0);
+    expect(accessMinutes(1, WALK)).toBeCloseTo(21.3, 0);
     expect(accessMinutes(1.6, WALK)).toBeNull();
   });
   it("riding is never slower than walking, and reaches 4 km", () => {

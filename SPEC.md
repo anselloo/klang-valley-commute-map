@@ -59,7 +59,7 @@ Satellite view: Esri World Imagery tiles.
 4. For every hex H: time(H → D) = min over stations S within reach of H of [access(H, S) + time(S → D)].
 5. Colour hexes by time band; hide hexes with no station in walking range.
 
-Walking time = straight-line distance × 1.3 (detour factor) ÷ 4.5 km/h. Simple and good enough for v1. By bike or e-hail (v3): the same 1.3 detour at 20 km/h plus 4 minutes, for stations beyond walking range.
+Walking time = straight-line distance × 1.6 (detour factor) ÷ 4.5 km/h. v1 used 1.3; v3 measured real pedestrian routes on OpenStreetMap (Valhalla, 150 random spots 300 m to 1.5 km from stations: median 1.8×, lower quartile 1.47×, router speed 4.7 km/h) and raised it. The sample includes unbuilt land and highways, so the median is a ceiling for where people live; 1.6 is a compromise. By bike or e-hail: a 1.3 detour at 20 km/h plus 4 minutes, for stations beyond walking range.
 
 ## Stack
 - Frontend: Vite + TypeScript, MapLibre GL JS, h3-js. No framework needed; React is fine if preferred.
@@ -121,16 +121,18 @@ An animated view of the rail network on the same map, as a second tab next to th
 ## v3: practicality and trust (built)
 Fixes from a review of the whole app.
 
-- **Getting to a station:** Walk (1.5 km) or Bike / e-hail (4 km, about 20 km/h plus 4 minutes). Shorter distances are still walked, so the second mode never gives a worse time. This addresses the main impracticality of the train-only map: most of the valley is more than 1.5 km from a station.
+- **Getting to a station:** Walk (1.5 km), Feeder bus, or Bike / e-hail (4 km, about 20 km/h plus 4 minutes). Shorter distances are still walked, so the second mode never gives a worse time. This addresses the main impracticality of the train-only map: most of the valley is more than 1.5 km from a station.
 - **Shareable links:** the address bar holds the destination and access mode (`#to=lat,lng&name=...&via=ride`); a shared link opens on it. A "Copy a link" button sits under the legend.
 - **Honesty about the data:** "Timetable data built <date>" in the panel (from `data/meta.json`), a warning once part of a timetable has expired, and a note in the network view that trains are simulated from the timetable. "Now" uses Kuala Lumpur time, and says when it is the weekend that the weekday timetable is shown.
 - **Waits:** the average gap used for waits is capped at 40 minutes, and stops with no train in the morning window fall back to the day's average gap. The review's sanity tests found stops with 100+ minute waits and a Kajang to Kajang 2 hop that took 110 minutes one way and 18 the other; both are gone.
 - **Search resilience:** station names are matched locally first, results are cached, requests are spaced at least 1.1 s apart, and Photon is tried when Nominatim fails.
 - **Data safety:** `scripts/validate_data.py` runs in the monthly refresh before anything is committed, and fails on a large drop in stations, lines or trips, or on unreachable pairs. Browser checks live in `web/e2e/` and run in CI (`.github/workflows/e2e.yml`). Plausibility tests on real journeys, speeds and symmetry are in `web/src/journeys.test.ts`.
-- **Time of day and direction:** weekday morning, weekday evening and Saturday, each with its own matrix and graph over the same stations, and a "coming back" direction that reads the matrix the other way round.
-- **KLIA Ekspres / Transit:** added by hand (`data/erl.json`) to the commute map; not drawn in the train view.
-- **Still to do by a person:** compare the times with Google Maps using [docs/VERIFY.md](docs/VERIFY.md), and re-check the hand-entered ERL figures against ERL's current timetable.
-- **Still not covered:** feeder buses and rents (no source), Sunday and late-night timetables, ERL in the train view, and a walking link between Klang's KTM and BRT stops. See the caveats in the README.
+- **Time of day and direction:** weekday morning, weekday evening, Saturday and Sunday, each with its own matrix and graph over the same stations, and a "coming back" direction that reads the matrix the other way round.
+- **Feeder buses:** Rapid KL's MRT feeder GTFS (about 90 routes, 2,000 stops, real trips) is reduced by `scripts/build_feeder.py` to the best way from each bus stop to a rail station and back, per time period (`feeder*.json`, 53 stations have feeders). The "Feeder bus" choice lets a place reach the rail network by a walk of up to 500 m to such a stop, with the wait for the bus included; the trip breakdown names the route. Other buses are still out of scope.
+- **KLIA Ekspres / Transit:** entered by hand (`data/erl.json`, positions from OpenStreetMap, times and peak/off-peak gaps from ERL's published schedule), in the commute map and drawn in the train view on their OpenStreetMap track with an ERL badge.
+- **Walking calibration:** the detour factor is 1.6, measured against pedestrian routing (see above); interchange walk times in `data/transfers.json` were checked the same way and four were corrected. `scripts/calibrate_walking.py` reproduces both.
+- **Still to do by a person:** compare the times with Google Maps using [docs/VERIFY.md](docs/VERIFY.md) (no way to query it from the build), and re-check the ERL Transit frequency.
+- **Still not covered:** rents (searched: no open dataset exists, only paid or scraped listings), buses other than the MRT feeders, late-night timetables, a walking link between Klang's KTM and BRT stops (they are about 3 km apart), and a fallback if the free base-map service is down.
 
 ## Later ideas (parking lot, don't build yet)
 - Add Rapid KL buses and MRT feeder buses

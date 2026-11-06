@@ -1,7 +1,7 @@
 # Checking the travel times against reality
 
 The numbers on the map come from timetables plus a simple model (half the gap between trains as the
-wait, 5 minutes per change, walks as straight-line distance x 1.3 at 4.5 km/h). Unit tests only catch
+wait, 5 minutes per change, walks as straight-line distance x 1.6 at 4.5 km/h). Unit tests only catch
 a broken build (`web/src/journeys.test.ts`); they cannot say whether the times are *right*. This is the
 manual check.
 
@@ -41,13 +41,15 @@ Model figures are station to station (they include the average wait) and come fr
   minutes (`MAX_HEADWAY`), which is optimistic for a missed train and pessimistic for a timed arrival.
 - **Networks that do not connect on foot.** Klang's KTM stations and the Sunway BRT stops can be 3 km
   apart as the crow flies with no walking transfer, so the model routes via KL. Bus links are not modelled.
-- **ERL is hand-entered, and there are no feeder buses.** KLIA Ekspres and KLIA Transit are in neither
-  feed, so `data/erl.json` holds their stops (from OpenStreetMap) and approximate ride times and
-  headways. Check them against ERL's timetable. Buses are not modelled; "Bike or e-hail" covers the
-  first/last leg to a station.
-- **Walking is straight-line x 1.3.** Highways, rivers and missing footbridges can make a real walk
-  much longer than the model says.
+- **ERL is hand-entered.** KLIA Ekspres and KLIA Transit are in neither feed, so `data/erl.json` holds
+  their stops (from OpenStreetMap) and the ride times and gaps from ERL's published schedule
+  (kliaekspres.com, 1 Aug 2023). Transit's frequency is the least certain figure.
+- **Buses:** only Rapid KL's MRT feeder buses are modelled, as a way of reaching a station (53 stations).
+  Other bus routes, and any bus-to-bus change, are not.
+- **Walking is straight-line x 1.6.** Measured against pedestrian routing (`scripts/calibrate_walking.py`)
+  the median is 1.8x and the lower quartile 1.5x; one in ten spots needs more than 5x because of highways,
+  rivers and missing footbridges. The model uses 1.6 on average, so those spots are still too optimistic.
 - **Prasarana trains are generated from the published headways**, so the train view is a faithful
   picture of the timetable, not of live positions.
-- **Three time periods only:** weekday morning, weekday evening and Saturday. Sunday and late-night
-  trips are not built.
+- **Four time periods:** weekday morning, weekday evening, Saturday and Sunday (each a two-hour window).
+  Late-night trips are not built.

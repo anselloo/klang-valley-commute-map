@@ -35,7 +35,8 @@ ok("hex layer hidden", await page.evaluate(() => window.__map.getLayoutProperty(
 
 // Pause so positions stay put, then find a moving train on screen away from the panel.
 await page.click("#net-play");
-await page.waitForTimeout(300);
+// The map source lags the last frame by a moment: let the paused positions settle before measuring.
+await page.waitForTimeout(1200);
 const pos = await page.evaluate(() => {
   const m = window.__map;
   const feats = m.querySourceFeatures("net-trains").filter(f => f.properties.stopped === 0);

@@ -3,7 +3,13 @@ import type { Station } from "./types";
 
 export const H3_RESOLUTION = 8;
 export const WALK_RADIUS_KM = 1.5;
-const DETOUR_FACTOR = 1.3;
+/**
+ * Real walks are longer than the straight line. Pedestrian routing on OpenStreetMap (see
+ * scripts/calibrate_walking.py) gave a median of 1.8x for random spots 300 m to 1.5 km from a
+ * station, 1.5x at the lower quartile, so 1.6 is used. Vehicles detour less.
+ */
+const DETOUR_FACTOR = 1.6;
+const RIDE_DETOUR_FACTOR = 1.3;
 const WALK_KMH = 4.5;
 
 /** How people get between a place and a station. */
@@ -50,7 +56,7 @@ export function accessMinutes(km: number, access: Access = WALK): number | null 
   if (km > access.radiusKm) return null;
   const walk = km <= WALK_RADIUS_KM ? walkMinutes(km) : Infinity;
   if (access.id === "walk") return walk;
-  return Math.min(walk, ((km * DETOUR_FACTOR) / RIDE_KMH) * 60 + RIDE_FIXED_MIN);
+  return Math.min(walk, ((km * RIDE_DETOUR_FACTOR) / RIDE_KMH) * 60 + RIDE_FIXED_MIN);
 }
 
 /** 0: under 30, 1: 30-45, 2: 45-60, 3: over 60 (or unreachable). */

@@ -6,7 +6,7 @@ const st = (id: string, lat: number, lon: number): Station => ({ id, name: id, l
 
 describe("walking", () => {
   it("applies the 1.3 detour factor at 4.5 km/h", () => {
-    expect(walkMinutes(1)).toBeCloseTo((1.3 / 4.5) * 60, 6);
+    expect(walkMinutes(1)).toBeCloseTo((1.6 / 4.5) * 60, 6);
   });
   it("haversine: one degree of latitude is about 111 km", () => {
     expect(haversineKm(3, 101, 4, 101)).toBeCloseTo(111.2, 0);

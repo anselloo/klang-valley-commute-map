@@ -11,8 +11,8 @@ Live site: https://anselloo.github.io/klang-valley-commute-map/
 The site opens on a worked example (KL Sentral) so you can see what it shows straight away. Then:
 
 1. **Choose where you work or study**: search a place, tap a quick pick (KL Sentral, KLCC, Bukit Bintang, Mid Valley, Subang Jaya, Sunway), or choose "pick a spot on the map". You can also drag the pin.
-2. **Say how you get to a station**: on foot (up to 1.5 km), or by bike, scooter or e-hailed car (up to 4 km, about 20 km/h plus 4 minutes to get going). The second option makes the map cover far more of the valley, which is closer to how most people commute.
-3. **Choose when, and which way**: weekday morning (the default), weekday evening or Saturday, and either the trip *to* your destination or the trip *back* from it. Evening plus "coming back" shows the commute home.
+2. **Say how you get to a station**: on foot (up to 1.5 km); on foot plus a Rapid KL **feeder bus** (a walk of up to 500 m to a stop whose bus goes to one of the 53 stations that have feeders, with the wait for the bus included); or by bike, scooter or e-hailed car (up to 4 km, about 20 km/h plus 4 minutes to get going). The last two make the map cover far more of the valley, which is closer to how most people commute.
+3. **Choose when, and which way**: weekday morning (the default), weekday evening, Saturday or Sunday, and either the trip *to* your destination or the trip *back* from it. Evening plus "coming back" shows the commute home.
 4. **Read the map**: an H3 hex grid is shaded by total door-to-door travel time to (or from) your destination at the time you chose (under 30 min, 30–45, 45–60, over 60). Uncoloured areas have no station within reach. Tap any coloured area for the trip: walk, wait, each ride with its line and stops, changes, and the final walk.
 
 The address bar always describes the current destination, access mode, time and direction, so **Copy a link to this map** shares exactly what you are looking at. Search looks at station names first (instantly), then Nominatim, then Photon as a backup.
@@ -35,18 +35,18 @@ The **Train network** tab shows every train on the weekday timetable moving alon
 - **Tap a station** for its next departures by line and direction, or use it as your destination in the commute view.
 - **Tap a line** (on the map or in the list) to focus on it; the list also shows how many trains each line has running.
 
-Rail only: LRT, MRT, Monorail, BRT Sunway, KTM Komuter and, in the commute map, KLIA Ekspres / KLIA Transit (entered by hand from `data/erl.json`, since they are in neither feed; they are not drawn in the train view). No buses, no real-time data, no backend. See [SPEC.md](SPEC.md).
+Rail only: LRT, MRT, Monorail, BRT Sunway, KTM Komuter and KLIA Ekspres / KLIA Transit (entered by hand from `data/erl.json`, since they are in neither feed), plus Rapid KL's MRT feeder buses as a way of reaching a station. No other buses, no real-time data, no backend. See [SPEC.md](SPEC.md).
 
 ## How it works
 
 A Python build step turns the official static GTFS feeds into small JSON files. The browser does the rest, with no server.
 
 1. **Build** (`scripts/build_matrix.py`): downloads the feeds, keeps Klang Valley rail for a weekday morning, weekday evening and Saturday, merges stops within 150 m into one station, and runs a shortest-path search from every station. Cost per trip is in-vehicle time, plus half the line's average headway (capped at 40 minutes) as the first wait, plus half the next line's headway and 5 minutes for each change. A hand-maintained list of out-of-system walking links (`data/transfers.json`) joins stations that are close but not connected in the feeds, and `data/erl.json` adds KLIA Ekspres and KLIA Transit by hand.
-2. **Browser** (`web/`, commute view): for a destination D, a station's time is the best of `matrix(S, T) + walk(T, D)` over stations T within 1.5 km of D. A hex's time is the best of `walk(H, S) + time(S)` over stations S within 1.5 km. Walking is straight-line distance × 1.3 ÷ 4.5 km/h.
+2. **Browser** (`web/`, commute view): for a destination D, a station's time is the best of `matrix(S, T) + walk(T, D)` over stations T within 1.5 km of D. A hex's time is the best of `walk(H, S) + time(S)` over stations S within 1.5 km. Walking is straight-line distance × 1.6 ÷ 4.5 km/h: pedestrian routing on OpenStreetMap measured a median 1.8× the straight line for random spots near stations (1.5× at the lower quartile), so the old 1.3× was optimistic. `scripts/calibrate_walking.py` reproduces the check.
 
 3. **Train network** (`scripts/build_network.py`, `web/src/network.ts`): the build step writes the track geometry and the timetable to `data/network.json`. Prasarana publishes the track shapes and the headway for each part of the day, so its trains are generated from those headways and follow the real track. The KTMB feed has no track shapes, so the Komuter track comes from OpenStreetMap (`scripts/fetch_ktm_geometry.py` saves it to `data/ktm_shapes.json`, which the build reads offline); KTM trains use the feed's real trip times. The browser works out where every train is at the simulated time.
 
-Times use trains departing 7–9 am on a weekday, 5–7:30 pm on a weekday, or 10 am–12 pm on a Saturday; the build writes one matrix per period over the same stations, and the browser loads the one you pick. There is no 8:00 / 9:00 option: it differed by about a minute for a typical trip. "Coming back" reads the matrix the other way round.
+Times use trains departing 7–9 am on a weekday, 5–7:30 pm on a weekday, or 10 am–12 pm on a Saturday or Sunday; the build writes one matrix per period over the same stations, and the browser loads the one you pick. There is no 8:00 / 9:00 option: it differed by about a minute for a typical trip. "Coming back" reads the matrix the other way round.
 
 ## Run it locally
 
@@ -58,7 +58,9 @@ python scripts/gtfs_check.py
 
 # 2. Rebuild the data in /data (committed, so this is optional)
 python scripts/build_matrix.py          # stations.json, matrix.json, graph.json (add --refresh to re-download the feeds)
+python scripts/build_feeder.py          # feeder.json (and -pm/-sat/-sun): feeder bus links, from the Rapid KL feeder feed
 python scripts/build_network.py         # network.json, for the train network view
+python scripts/calibrate_walking.py    # one-off: checks the walking assumptions against pedestrian routing on OpenStreetMap
 python scripts/validate_data.py         # sanity-checks the generated data (the monthly refresh runs this too)
 python scripts/fetch_ktm_geometry.py    # only if the KTM track changes: refreshes data/ktm_shapes.json from OpenStreetMap
 
@@ -93,7 +95,7 @@ SPEC.md      the v1 spec
 ## Caveats
 
 - **Estimates, not a journey planner.** Waits are half the average headway (capped at 20 minutes), not a real timetable lookup, and walking ignores roads and rivers. The times have **not** yet been compared with Google Maps; [docs/VERIFY.md](docs/VERIFY.md) is the checklist for doing that.
-- **Not in the data:** feeder buses and rents. Without them the map answers "how far by train", not "where should I live". KLIA Ekspres / Transit were added by hand from published figures (`data/erl.json`) and are worth re-checking against ERL's current timetable. Sunday and late-evening timetables are not built.
+- **Not in the data:** rents (there is no open dataset; the searches found only paid or scraped listing data), buses other than the MRT feeders, and late-night timetables. Without rents the map answers "how far by train", not "where should I live". KLIA Ekspres / Transit were added by hand from ERL's published schedule (`data/erl.json`); the Transit frequency is the least certain figure.
 - **Free third-party services.** Search (Nominatim, with Photon as a fallback), the base map (OpenFreeMap) and satellite (Esri) are free and come with no guarantee, and heavy traffic could get the site throttled.
 - **Feed gaps show up.** The KTM feed has few trains on some lines (for example the Port Klang line), so some KTM stations look slow. The Kelana Jaya line takes about 98 minutes end to end in the Prasarana feed.
 - **Transfer walk times are guesses.** The walks in `data/transfers.json` are estimates and are worth checking on the ground.
