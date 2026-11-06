@@ -57,6 +57,20 @@
             </div>
             <p class="small" id="slot-note"></p>
             <button type="button" id="remove-b" class="pill" hidden>Remove destination B</button>
+            <div id="measure-box" hidden>
+              <div id="measure" class="seg" role="group" aria-label="How to combine the two trips">
+                <span class="thumb" aria-hidden="true"></span>
+                <button type="button" data-measure="worst" class="on" aria-pressed="true">Longer trip</button>
+                <button type="button" data-measure="average" aria-pressed="false">Average trip</button>
+              </div>
+              <p class="small" id="measure-note"></p>
+              <div id="weights" hidden>
+                <label class="weight"><span class="slot-badge" style="background:#c0392b">A</span><span class="weight-text">trips a week</span>
+                  <input type="number" id="weight-a" min="0" max="14" step="1" value="5" inputmode="numeric" /></label>
+                <label class="weight"><span class="slot-badge" style="background:#6c3fc5">B</span><span class="weight-text">trips a week</span>
+                  <input type="number" id="weight-b" min="0" max="14" step="1" value="5" inputmode="numeric" /></label>
+              </div>
+            </div>
             <form id="search" autocomplete="off">
               <label class="field">
                 <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>

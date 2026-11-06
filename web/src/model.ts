@@ -102,6 +102,27 @@ export function slowest(results: Result[]): Float64Array {
   return out;
 }
 
+export type Measure = "worst" | "average";
+
+/**
+ * Two destinations as one number per hex. "worst" is the longer trip; "average" is the average trip
+ * minutes weighted by how often each trip is made (a weight of 0 ignores that destination, and all
+ * weights 0 counts both equally). Infinity if a counted trip cannot be made.
+ */
+export function combine(results: Result[], measure: Measure, weights: number[] = [1, 1]): Float64Array {
+  if (measure === "worst") return slowest(results);
+  const w = weights.every((x) => !(x > 0)) ? results.map(() => 1) : results.map((_, i) => Math.max(0, weights[i] ?? 0));
+  const total = w.reduce((a, b) => a + b, 0);
+  const n = results[0].hexTimes.length;
+  const out = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    let sum = 0;
+    for (let k = 0; k < results.length; k++) if (w[k] > 0) sum += w[k] * results[k].hexTimes[i];
+    out[i] = sum / total;
+  }
+  return out;
+}
+
 /** The H3 grid of hexes that have at least one station in walking range. */
 export function buildHexes(stations: Station[], access: Access = WALK, feeder: FeederStop[] = []): Hex[] {
   const byId = new Map<string, Hex>();

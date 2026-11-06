@@ -7,7 +7,7 @@ import "./style.css";
 import { BasemapController, type Basemap } from "./basemap";
 import { breakdownHtml, escapeHtml } from "./breakdown";
 import { RouteFinder, type Graph } from "./graph";
-import { BUS, RIDE, WALK, bandOf, buildHexes, compute, haversineKm, slowest, type Access, type FeederStop, type Hex, type Near, type Result } from "./model";
+import { BUS, RIDE, WALK, bandOf, buildHexes, combine, compute, haversineKm, type Access, type Measure, type FeederStop, type Hex, type Near, type Result } from "./model";
 import { NetworkView } from "./networkView";
 import type { Station } from "./types";
 
@@ -226,6 +226,10 @@ async function start() {
   const whenParam = initial.get("when");
   let when: When = whenParam === "pm" || whenParam === "sat" || whenParam === "sun" ? whenParam : "am";
   let reverse = initial.get("dir") === "from";
+  let measure: Measure = initial.get("m") === "avg" ? "average" : "worst";
+  /** Trips a week to A and to B, used by the "Average trip" measure. */
+  const weights = (initial.get("w") ?? "5,5").split(",").map((x) => Math.min(14, Math.max(0, Math.round(Number(x)) || 0)));
+  while (weights.length < 2) weights.push(5);
   /** Feeder bus stops for the chosen time of day; empty unless the bus option is on. */
   let feeder: FeederStop[] = access.id === "bus" ? await getFeeder(when) : [];
   let hexes = buildHexes(stations, access, feeder);
@@ -329,6 +333,10 @@ async function start() {
     if (access.id !== "walk") p.set("via", access.id);
     if (when !== "am") p.set("when", when);
     if (reverse) p.set("dir", "from");
+    if (b && measure === "average") {
+      p.set("m", "avg");
+      p.set("w", weights.join(","));
+    }
     history.replaceState(null, "", `#${p.toString().replaceAll("%2C", ",")}`);
   }
 
@@ -407,6 +415,25 @@ async function start() {
     el("remove-b").hidden = !(slot === 1 && dests[1]);
   }
 
+  /** The "Longer trip / Average trip" choice shows only when there are two destinations. */
+  function showMeasure() {
+    const two = !!(dests[0] && dests[1]);
+    el("measure-box").hidden = !two;
+    document.querySelectorAll<HTMLButtonElement>("#measure button").forEach((b) => {
+      const on = b.dataset.measure === (measure === "average" ? "average" : "worst");
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+    el("measure").style.setProperty("--i", measure === "average" ? "1" : "0");
+    el("weights").hidden = measure !== "average";
+    el<HTMLInputElement>("weight-a").value = String(weights[0]);
+    el<HTMLInputElement>("weight-b").value = String(weights[1]);
+    el("measure-note").textContent =
+      measure === "worst"
+        ? "Each area is shaded by whichever trip takes longer, so a colour means both trips are at least that good."
+        : "Each area is shaded by the average trip, counting each destination by how often you go. Set a weight to 0 to ignore it.";
+  }
+
   function setSlot(next: number) {
     slot = next;
     setPicking(false);
@@ -426,7 +453,7 @@ async function start() {
       results[i] = d ? compute(stations, matrix, hexes, d.lat, d.lng, access, reverse, feeder) : null;
     });
     const active = results.filter((r): r is Result => r !== null);
-    const times = active.length === 2 ? slowest(active) : active[0].hexTimes;
+    const times = active.length === 2 ? combine(active, measure, weights) : active[0].hexTimes;
     hexes.forEach((hex, i) => {
       map.setFeatureState({ source: "hexes", id: hex.id }, { band: bandOf(times[i]) });
     });
@@ -443,14 +470,17 @@ async function start() {
     const names = dests.filter((d): d is Destination => d !== null).map((d) => d.label).join(" and ");
     const dir = reverse ? "from" : "to";
     summaryEl.textContent = compare
-      ? `Slower commute ${dir} ${names}, ${WHEN[when].label}`
+      ? `${measure === "average" ? "Average commute" : "Slower commute"} ${dir} ${names}, ${WHEN[when].label}`
       : `Train time ${dir} ${names}, ${WHEN[when].label}`;
     el("legend-title").textContent = compare
-      ? `The longer of the two trips, ${dir} ${names}:`
+      ? measure === "average"
+        ? `The average of the two trips, weighted by trips a week, ${dir} ${names}:`
+        : `The longer of the two trips, ${dir} ${names}:`
       : reverse
         ? `Time from ${names} to each area:`
         : `Time from each area to ${names}:`;
     showSlots();
+    showMeasure();
     document.querySelectorAll<HTMLButtonElement>("#chips button").forEach((b) => {
       b.classList.toggle("on", b.dataset.chip === dests[slot]?.chip);
     });
@@ -523,8 +553,11 @@ async function start() {
     } else {
       const times = trips.map((t) => t?.time ?? Infinity);
       const worst = Math.max(...times);
-      body = Number.isFinite(worst)
-        ? `<strong>${Math.round(worst)} min for the slower trip</strong>`
+      const w = weights.every((x) => x <= 0) ? [1, 1] : weights;
+      const average = used.reduce((sum, i, k) => (w[i] > 0 ? sum + w[i] * times[k] : sum), 0) / used.reduce((sum, i) => sum + Math.max(0, w[i]), 0);
+      const headline = measure === "average" ? average : worst;
+      body = Number.isFinite(headline)
+        ? `<strong>${Math.round(headline)} min ${measure === "average" ? "on average per trip" : "for the slower trip"}</strong>`
         : "<strong>No route</strong> to one of the destinations from here.";
       body += used
         .map((i, k) => {
@@ -574,6 +607,21 @@ async function start() {
   el("pick").addEventListener("click", () => setPicking(!picking));
   document.querySelectorAll<HTMLButtonElement>("#slots button").forEach((b) => {
     b.addEventListener("click", () => setSlot(Number(b.dataset.slot)));
+  });
+  document.querySelectorAll<HTMLButtonElement>("#measure button").forEach((b) => {
+    b.addEventListener("click", () => {
+      const next: Measure = b.dataset.measure === "average" ? "average" : "worst";
+      if (next === measure) return;
+      measure = next;
+      void update();
+    });
+  });
+  (["weight-a", "weight-b"] as const).forEach((id, k) => {
+    el<HTMLInputElement>(id).addEventListener("change", (ev) => {
+      const v = Math.round(Number((ev.target as HTMLInputElement).value));
+      weights[k] = Math.min(14, Math.max(0, Number.isFinite(v) ? v : 0));
+      void update();
+    });
   });
   el("remove-b").addEventListener("click", () => {
     dests[1] = null;

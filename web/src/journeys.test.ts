@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { BUS, haversineKm, RIDE, WALK, accessMinutes, buildHexes, compute, slowest, type FeederStop } from "./model";
+import { BUS, haversineKm, RIDE, WALK, accessMinutes, buildHexes, combine, compute, slowest, type FeederStop } from "./model";
 import type { Station } from "./types";
 
 const read = <T>(name: string) =>
@@ -215,5 +215,48 @@ describe("two destinations", () => {
     const under45 = (t: ArrayLike<number>) => Array.from(t as number[]).filter((v) => v < 45).length;
     expect(under45(both)).toBeLessThanOrEqual(Math.min(under45(a.hexTimes), under45(b.hexTimes)));
     expect(under45(both)).toBeGreaterThan(0);
+  });
+});
+
+describe("combining two destinations", () => {
+  const hexes = buildHexes(stations, WALK);
+  const at = (name: string) => {
+    const s = stations.find((x) => x.name === name)!;
+    return compute(stations, matrix, hexes, s.lat, s.lon, WALK);
+  };
+  const a = at("KL Sentral");
+  const b = at("Subang Jaya");
+
+  it("'worst' is the longer trip", () => {
+    const w = combine([a, b], "worst");
+    hexes.forEach((_, i) => expect(w[i]).toBe(Math.max(a.hexTimes[i], b.hexTimes[i])));
+  });
+
+  it("'average' with equal weights is the mean, and is never worse than 'worst'", () => {
+    const avg = combine([a, b], "average", [5, 5]);
+    const worst = combine([a, b], "worst");
+    hexes.forEach((_, i) => {
+      if (Number.isFinite(worst[i])) {
+        expect(avg[i]).toBeCloseTo((a.hexTimes[i] + b.hexTimes[i]) / 2, 9);
+        expect(avg[i]).toBeLessThanOrEqual(worst[i] + 1e-9);
+      }
+    });
+  });
+
+  it("weights shift the average toward the destination you visit more", () => {
+    const i = hexes.findIndex((_, k) => Number.isFinite(a.hexTimes[k]) && Number.isFinite(b.hexTimes[k]) && Math.abs(a.hexTimes[k] - b.hexTimes[k]) > 10);
+    expect(i).toBeGreaterThanOrEqual(0);
+    const towardA = combine([a, b], "average", [9, 1])[i];
+    const towardB = combine([a, b], "average", [1, 9])[i];
+    const aFaster = a.hexTimes[i] < b.hexTimes[i];
+    expect(aFaster ? towardA < towardB : towardA > towardB).toBe(true);
+  });
+
+  it("a weight of 0 ignores that destination, even when it is unreachable", () => {
+    const only = combine([a, b], "average", [1, 0]);
+    hexes.forEach((_, i) => expect(only[i]).toBe(a.hexTimes[i]));
+    const equal = combine([a, b], "average", [0, 0]);
+    const mean = combine([a, b], "average", [1, 1]);
+    hexes.forEach((_, i) => expect(equal[i]).toBe(mean[i]));
   });
 });

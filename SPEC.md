@@ -141,10 +141,14 @@ For anyone with two places to reach: two workplaces, a workplace and a campus, o
 - Two pins (A red, B purple) with labels. Tapping an area shows both trips side by side under "N min for the slower trip", each with its own steps. "Use this spot" fills whichever destination is selected. "Remove destination B" goes back to one.
 - The link carries both (`#to=...&name=...&to2=...&name2=...`), so the exact view can be shared.
 - Combining is `slowest()` in `web/src/model.ts` over the two per-destination results, so it costs one extra recompute (a few milliseconds).
-- Not included: a weighting (for example 60/40), a "sum of the two" measure, or more than two destinations.
+- Not included: more than two destinations.
+
+### v4.1: how to combine two destinations (built)
+- A **Longer trip / Average trip** switch appears once B is set. *Longer trip* is the default above. *Average trip* shades each area by the average trip minutes, weighted by how often you make each trip: two "trips a week" boxes (0–14, default 5 and 5). A weight of 0 ignores that destination, all zeros counts both equally, and an unreachable destination makes the area unreachable.
+- Averaging keeps the 30/45/60 bands meaningful (they stay minutes per trip). The popup headline follows the measure ("on average per trip" or "for the slower trip").
+- The link carries it (`&m=avg&w=5,2`). Logic is `combine()` in `web/src/model.ts`, with unit tests for the maths and edge cases.
 
 ## Later ideas (parking lot, don't build yet)
 - Rapid KL city buses (the MRT feeder buses are done; the rest have thousands of stops and bus-to-bus changes)
-- A weighting or "total time" option for two destinations
 - Penang and Johor Bahru versions (first check the Klang Valley times against Google Maps)
 - Rents were dropped: no open dataset, and the listing sites forbid scraping
