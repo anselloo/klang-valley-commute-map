@@ -357,8 +357,9 @@ async function start() {
         const total = each.length ? combineValues(each, measure, used.map((i) => weights[i])) : Infinity;
         const detail = used.length === 2 ? `<span class="cand-times">A ${minutesLabel(each[0])} · B ${minutesLabel(each[1])}</span>` : "";
         return (
-          `<li class="cand"><span class="cand-n">${k + 1}</span><span class="cand-name" title="${escapeHtml(c.label)}">${escapeHtml(c.label)}</span>` +
-          `${detail}<span class="cand-total">${bandDot(total)}${minutesLabel(total)}</span>` +
+          `<li class="cand"><span class="cand-n">${k + 1}</span>` +
+          `<span class="cand-main"><span class="cand-name" title="${escapeHtml(c.label)}">${escapeHtml(c.label)}</span>${detail}</span>` +
+          `<span class="cand-total">${bandDot(total)}${minutesLabel(total)}</span>` +
           `<button type="button" class="cand-remove" data-remove="${k}" aria-label="Remove ${escapeHtml(c.label)}">×</button></li>`
         );
       })

@@ -259,6 +259,15 @@ const sharedList = await browser.newPage({ viewport: { width: 1200, height: 800 
 await sharedList.goto(base + "?debug#to=3.13434,101.6862&name=KL%20Sentral&h=3.1296,101.6791,Bangsar|3.0732,101.6071,Subang%20Jaya", { waitUntil: "load" });
 await sharedList.waitForTimeout(5500);
 ok("a shared link restores the shortlist", (await sharedList.locator("#cand-list .cand").count()) === 2);
+// Long names and a wide classic scrollbar must never push the minutes out of the panel.
+await sharedList.addStyleTag({ content: "#panel{scrollbar-width:auto !important}" });
+await sharedList.evaluate(() => { document.querySelector("#cand-list .cand-name").textContent = "A very long address name for testing how the row copes with it"; });
+const overflowing = await sharedList.evaluate(() => {
+  const p = document.getElementById("panel");
+  const limit = p.getBoundingClientRect().left + p.clientWidth;
+  return [...document.querySelectorAll("#rank-list .rank, #cand-list .cand")].filter((r) => r.getBoundingClientRect().right > limit + 0.5).length;
+});
+ok("shortlist and ranking rows stay inside the panel", overflowing === 0, `${overflowing} overflowing`);
 await sharedList.click("#access button[data-access='bus']");
 await sharedList.waitForTimeout(2500);
 ok("the bus option shows the feed freshness note", /valid to/.test(await sharedList.evaluate(() => document.getElementById("data-info").innerText)));

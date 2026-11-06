@@ -341,3 +341,12 @@ summary { cursor: pointer; color: var(--tint); font-weight: 500; }
 }
 .rank { box-sizing: border-box; }
 .rank-lines { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 42%; }
+/* The minutes never get squeezed or hidden, whatever the station name or scrollbar width. */
+#panel { scrollbar-gutter: stable; }
+.rank-total, .cand-total, .cand-times, .cand-n, .cand-remove { flex: none; }
+.rank-name, .cand-name { flex: 1 1 0; }
+/* A grid column is as wide as its widest content by default; keep it to the panel so long names are cut with an ellipsis instead. */
+#cand-list, #rank-list { grid-template-columns: minmax(0, 1fr); }
+#cand-list > li, #rank-list > li { min-width: 0; }
+.cand-main { flex: 1 1 0; min-width: 0; display: grid; }
+.cand-main .cand-name { flex: none; }
