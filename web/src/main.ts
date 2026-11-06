@@ -402,7 +402,7 @@ async function start() {
     el("slot-note").textContent = d
       ? `Choosing destination ${slotName(slot)}: ${d.label}. Search, tap a quick pick, pick a spot or drag its pin to change it.`
       : slot === 1
-        ? "Choose where your partner works or studies. The map then shows the longer of the two commutes."
+        ? "Choose a second place you need to get to. The map then shows the longer of the two commutes."
         : "Search, tap a quick pick or pick a spot on the map.";
     el("remove-b").hidden = !(slot === 1 && dests[1]);
   }

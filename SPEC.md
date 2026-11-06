@@ -135,11 +135,11 @@ Fixes from a review of the whole app. v3 was the first batch (access modes, shar
 - **Still not covered:** rents (searched: DOSM publishes household income and expenditure by parliamentary constituency and state-level house price indices, but no rent by area; the rest is paid or scraped listings), buses other than the MRT feeders, late-night timetables, a walking link between Klang's KTM and BRT stops (they are about 3 km apart), and a fallback for satellite imagery. If the OpenFreeMap style cannot be fetched (7 s timeout) the app falls back to plain OpenStreetMap raster tiles with a notice, and everything else works.
 
 ## v4: compare two destinations (built)
-For couples (or anyone) with two workplaces.
+For anyone with two places to reach: two workplaces, a workplace and a campus, or a workplace and family.
 
 - Step 1 now has a Destination A / Destination B switch. Search, quick picks, "pick a spot" and pin dragging all change whichever is selected. With B set, the map shades each area by the **longer** of the two trips, so "under 45" means both commutes are under 45 minutes. Everything else (time of day, direction, how you reach a station) applies to both.
 - Two pins (A red, B purple) with labels. Tapping an area shows both trips side by side under "N min for the slower trip", each with its own steps. "Use this spot" fills whichever destination is selected. "Remove destination B" goes back to one.
-- The link carries both (`#to=...&name=...&to2=...&name2=...`), so a couple can share the exact view.
+- The link carries both (`#to=...&name=...&to2=...&name2=...`), so the exact view can be shared.
 - Combining is `slowest()` in `web/src/model.ts` over the two per-destination results, so it costs one extra recompute (a few milliseconds).
 - Not included: a weighting (for example 60/40), a "sum of the two" measure, or more than two destinations.
 
