@@ -29,30 +29,53 @@ const badge = (name: string, color: string) =>
 const minutesText = (seconds: number) =>
   seconds < 30 ? "now" : seconds < 90 ? "1 min" : `${Math.round(seconds / 60)} min`;
 
-/** An arrow in the line's colour inside a white ring with a dark outline, so it reads on its own line. */
+/**
+ * A round, Apple-Maps-style puck in the line's colour: white ring, soft shadow and a small rounded
+ * pointer on top that shows the direction of travel.
+ */
 function arrowImage(color: string): ImageData {
-  const size = 44;
+  const size = 48;
+  const c = size / 2;
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext("2d")!;
-  const path = (inset: number) => {
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+
+  // White body: disc plus a rounded pointer, drawn with a shadow.
+  const body = () => {
     ctx.beginPath();
-    ctx.moveTo(size / 2, inset);
-    ctx.lineTo(size - inset - 1, size - inset);
-    ctx.lineTo(size / 2, size - inset - 8);
-    ctx.lineTo(inset + 1, size - inset);
+    ctx.arc(c, c + 3, 13, 0, Math.PI * 2);
+    ctx.moveTo(c - 7, c - 6);
+    ctx.lineTo(c, 5);
+    ctx.lineTo(c + 7, c - 6);
     ctx.closePath();
   };
-  ctx.lineJoin = "round";
-  path(3);
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = "#1d2733";
-  ctx.stroke();
+  ctx.shadowColor = "rgba(0,0,0,0.35)";
+  ctx.shadowBlur = 5;
+  ctx.shadowOffsetY = 1.5;
+  body();
   ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 4;
   ctx.fill();
-  path(10);
+  ctx.stroke();
+  ctx.shadowColor = "transparent";
+
+  // Coloured centre.
+  ctx.beginPath();
+  ctx.arc(c, c + 3, 9, 0, Math.PI * 2);
   ctx.fillStyle = color;
   ctx.fill();
+
+  // Small white chevron inside, also pointing up.
+  ctx.beginPath();
+  ctx.moveTo(c - 4, c + 6);
+  ctx.lineTo(c, c);
+  ctx.lineTo(c + 4, c + 6);
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2.4;
+  ctx.stroke();
   return ctx.getImageData(0, 0, size, size);
 }
 
