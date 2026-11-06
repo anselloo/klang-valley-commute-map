@@ -7,7 +7,7 @@ import "./style.css";
 import { BasemapController, type Basemap } from "./basemap";
 import { breakdownHtml, escapeHtml } from "./breakdown";
 import { RouteFinder, type Graph } from "./graph";
-import { bandOf, buildHexes, compute, haversineKm, type Hex, type Result } from "./model";
+import { RIDE, WALK, bandOf, buildHexes, compute, haversineKm, type Access, type Hex, type Result } from "./model";
 import { NetworkView } from "./networkView";
 import type { Station } from "./types";
 
@@ -35,6 +35,18 @@ interface Destination {
   label: string;
   chip?: string;
 }
+
+/** The Klang Valley box the map is limited to. */
+const inValley = (lat: number, lng: number) => lat >= 2.5 && lat <= 3.8 && lng >= 100.9 && lng <= 102.4;
+
+interface Meta {
+  built: string;
+  feeds: Record<string, { valid_from: string | null; valid_to: string | null }>;
+}
+const prettyDate = (d: string) => {
+  const iso = /^\d{8}$/.test(d) ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}` : d;
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+};
 
 async function loadJson<T>(name: string): Promise<T> {
   const res = await fetch(`${import.meta.env.BASE_URL}data/${name}`);
@@ -167,8 +179,9 @@ function addMapLayers(stations: Station[], hexes: Hex[]) {
 
 async function start() {
   const [stations] = await Promise.all([stationsPromise, mapLoaded]);
-  const hexes = buildHexes(stations);
-  const hexIndex = new Map(hexes.map((h, i) => [h.id, i]));
+  let access: Access = new URLSearchParams(location.hash.slice(1)).get("via") === "ride" ? RIDE : WALK;
+  let hexes = buildHexes(stations, access);
+  let hexIndex = new Map(hexes.map((h, i) => [h.id, i]));
   basemap.init();
   addMapLayers(stations, hexes);
   if (isPhone()) {
@@ -239,12 +252,43 @@ async function start() {
     }
   }
 
+  /** Keep the address bar describing the current view, so the link can be shared. */
+  function writeHash() {
+    if (!dest) return;
+    const p = new URLSearchParams({ to: `${dest.lat.toFixed(5)},${dest.lng.toFixed(5)}`, name: dest.label });
+    if (access.id !== "walk") p.set("via", access.id);
+    history.replaceState(null, "", `#${p.toString().replace("%2C", ",")}`);
+  }
+
+  function showAccess() {
+    document.querySelectorAll<HTMLButtonElement>("#access button").forEach((b) => {
+      const on = b.dataset.access === access.id;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+    el("access").style.setProperty("--i", access.id === "walk" ? "0" : "1");
+    el("access-note").textContent =
+      access.id === "walk"
+        ? "Stations within a 1.5 km walk, at 4.5 km/h."
+        : "Walk to stations up to 1.5 km away; beyond that, a bike, scooter or e-hailed car up to 4 km at about 20 km/h, plus 4 minutes to get going.";
+  }
+
+  async function setAccess(next: Access) {
+    if (next === access) return;
+    access = next;
+    showAccess();
+    hexes = buildHexes(stations, access);
+    hexIndex = new Map(hexes.map((h, i) => [h.id, i]));
+    (map.getSource("hexes") as maplibregl.GeoJSONSource).setData(hexFeatures(hexes));
+    await update();
+  }
+
   async function update() {
     if (!dest) return;
     breakdownPopup.remove();
     const matrix = await matrixPromise;
     const started = performance.now();
-    result = compute(stations, matrix, hexes, dest.lat, dest.lng);
+    result = compute(stations, matrix, hexes, dest.lat, dest.lng, access);
     hexes.forEach((hex, i) => {
       map.setFeatureState({ source: "hexes", id: hex.id }, { band: bandOf(result!.hexTimes[i]) });
     });
@@ -258,7 +302,8 @@ async function start() {
     peekEl.textContent = PEEK_TIP;
     statusEl.textContent = result.destStations.length
       ? "Tap a coloured area to see how you would get there."
-      : "No station within a 1.5 km walk of that spot, so nothing is reachable by train from it. Try somewhere closer to a station.";
+      : `No station within ${access.reach} of that spot, so nothing is reachable by train from it. Try somewhere closer to a station.`;
+    writeHash();
   }
 
   function setDestination(d: Destination) {
@@ -287,12 +332,13 @@ async function start() {
       stationName: (i) => stations[i].name,
       walkToDestination: { name: dest.label, minutes: walkOut },
       total: time,
+      verb: access.verb,
     });
     breakdownPopup
       .setLngLat(at)
       .setHTML(
         `<strong>${Math.round(time)} min from here to ${escapeHtml(dest.label)}</strong>${html}` +
-          `<div class="popup-note">Weekday morning (trains departing 7–9 am). Walks are straight-line estimates; waits are half the average gap between trains.</div>` +
+          `<div class="popup-note">Weekday morning (trains departing 7–9 am). Walks and rides to stations are straight-line estimates; waits are half the average gap between trains.</div>` +
           `<div class="popup-actions"><button type="button" id="set-dest">Use this spot as my destination</button></div>`,
       )
       .addTo(map);
@@ -346,31 +392,100 @@ async function start() {
     chips.appendChild(btn);
   }
 
-  // Destination search (Nominatim, one request per submit).
+  // Destination search: station names first (instant, offline), then Nominatim, then Photon as a backup.
+  type Place = { lng: number; lat: number; label: string };
+  const BBOX = { west: 100.9, south: 2.5, east: 102.4, north: 3.8 };
+  const viaNominatim = async (q: string): Promise<Place | null> => {
+    const url =
+      "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=my" +
+      `&viewbox=${BBOX.west},${BBOX.north},${BBOX.east},${BBOX.south}&bounded=1&q=${encodeURIComponent(q)}`;
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error(String(res.status));
+    const hits = (await res.json()) as { lat: string; lon: string; display_name: string }[];
+    return hits.length ? { lng: Number(hits[0].lon), lat: Number(hits[0].lat), label: hits[0].display_name.split(",")[0] } : null;
+  };
+  const viaPhoton = async (q: string): Promise<Place | null> => {
+    const url = `https://photon.komoot.io/api/?limit=1&bbox=${BBOX.west},${BBOX.south},${BBOX.east},${BBOX.north}&q=${encodeURIComponent(q)}`;
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error(String(res.status));
+    const body = (await res.json()) as { features: { geometry: { coordinates: [number, number] }; properties: { name?: string } }[] };
+    const f = body.features[0];
+    return f ? { lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1], label: f.properties.name ?? q } : null;
+  };
+  let lastLookup = 0;
+  const lookups = new Map<string, Place | null>();
+  /** Null when nothing matches; throws when no search service answered. */
+  async function geocode(q: string): Promise<Place | null> {
+    const lower = q.toLowerCase();
+    const station =
+      stations.find((s) => s.name.toLowerCase() === lower) ??
+      (lower.length >= 3 ? stations.find((s) => s.name.toLowerCase().includes(lower)) : undefined);
+    if (station) return { lng: station.lon, lat: station.lat, label: station.name };
+    if (lookups.has(lower)) return lookups.get(lower)!;
+    // Nominatim's usage policy: at most one request per second.
+    const wait = 1100 - (Date.now() - lastLookup);
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    lastLookup = Date.now();
+    let answered = false;
+    for (const lookup of [viaNominatim, viaPhoton]) {
+      try {
+        const hit = await lookup(q);
+        answered = true;
+        if (hit && inValley(hit.lat, hit.lng)) {
+          lookups.set(lower, hit);
+          return hit;
+        }
+      } catch {
+        /* try the next service */
+      }
+    }
+    if (!answered) throw new Error("search unavailable");
+    lookups.set(lower, null);
+    return null;
+  }
   el<HTMLFormElement>("search").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const q = el<HTMLInputElement>("search-input").value.trim();
     if (!q) return;
     statusEl.textContent = "Searching…";
     try {
-      const url =
-        "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=my" +
-        "&viewbox=100.9,3.8,102.4,2.5&bounded=1&q=" + encodeURIComponent(q);
-      const res = await fetch(url, { headers: { Accept: "application/json" } });
-      if (!res.ok) throw new Error(String(res.status));
-      const hits = (await res.json()) as { lat: string; lon: string; display_name: string }[];
-      if (!hits.length) {
+      const hit = await geocode(q);
+      if (!hit) {
         statusEl.textContent = `No match for "${q}" in the Klang Valley. Try a nearby landmark or station name.`;
         return;
       }
-      const lng = Number(hits[0].lon);
-      const lat = Number(hits[0].lat);
-      map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 12) });
-      await setDestination({ lng, lat, label: hits[0].display_name.split(",")[0] });
+      map.flyTo({ center: [hit.lng, hit.lat], zoom: Math.max(map.getZoom(), 12) });
+      await setDestination(hit);
     } catch {
       statusEl.textContent = "Search is unavailable right now. Use a quick pick or tap the map instead.";
     }
   });
+
+  // How you reach a station, and sharing.
+  document.querySelectorAll<HTMLButtonElement>("#access button").forEach((b) => {
+    b.addEventListener("click", () => void setAccess(b.dataset.access === "ride" ? RIDE : WALK));
+  });
+  showAccess();
+  el("share").addEventListener("click", async () => {
+    const btn = el("share");
+    try {
+      await navigator.clipboard.writeText(location.href);
+      btn.textContent = "Link copied";
+    } catch {
+      statusEl.textContent = "Copy the address from your browser's address bar to share this map.";
+    }
+    setTimeout(() => (btn.textContent = "Copy a link to this map"), 1800);
+  });
+
+  // "Data as of": when the timetable was built, and a warning if a feed has expired.
+  void loadJson<Meta>("meta.json")
+    .then((m) => {
+      const today = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+      const expired = Object.values(m.feeds).some((f) => f.valid_to && f.valid_to < today);
+      el("data-info").textContent =
+        `Timetable data built ${prettyDate(m.built)}.` + (expired ? " Part of this timetable has expired, so some times may be out of date." : "");
+    })
+    .catch(() => undefined);
 
   const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 });
   map.on("mousemove", "station-dots", (e) => {
@@ -433,6 +548,18 @@ async function start() {
   document.querySelectorAll<HTMLButtonElement>("#modes button").forEach((b) => {
     b.addEventListener("click", () => void setMode(b.dataset.mode as "commute" | "network"));
   });
+
+  // A shared link opens straight onto its destination.
+  const hash = new URLSearchParams(location.hash.slice(1));
+  const [sharedLat, sharedLng] = (hash.get("to") ?? "").split(",").map(Number);
+  if (Number.isFinite(sharedLat) && Number.isFinite(sharedLng) && inValley(sharedLat, sharedLng)) {
+    const name = (hash.get("name") ?? "").slice(0, 80) || nearestLabel(sharedLng, sharedLat);
+    map.jumpTo({ center: [sharedLng, sharedLat], zoom: Math.max(map.getZoom(), 10.8) });
+    showAccess();
+    await setDestination({ lng: sharedLng, lat: sharedLat, label: name, chip: QUICK_PICKS.find((p) => p.label === name)?.label });
+    setCollapsed(isPhone());
+    return;
+  }
 
   // Start with a worked example so the first screen already shows what the site does.
   const start = chips.querySelector<HTMLButtonElement>("button");

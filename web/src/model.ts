@@ -5,8 +5,24 @@ export const H3_RESOLUTION = 8;
 export const WALK_RADIUS_KM = 1.5;
 const DETOUR_FACTOR = 1.3;
 const WALK_KMH = 4.5;
-/** Neighbour rings to scan around a station; res-8 cell centres are ~0.9 km apart. */
-const GRID_RINGS = 3;
+
+/** How people get between a place and a station. */
+export interface Access {
+  id: "walk" | "ride";
+  /** Furthest station, in straight-line km. */
+  radiusKm: number;
+  /** Neighbour rings to scan around a station; res-8 cell centres are ~0.9 km apart. */
+  rings: number;
+  /** Used in the trip breakdown: "<verb> to <station>". */
+  verb: string;
+  /** Short wording for messages: "within a 1.5 km walk". */
+  reach: string;
+}
+export const WALK: Access = { id: "walk", radiusKm: WALK_RADIUS_KM, rings: 3, verb: "Walk", reach: "a 1.5 km walk" };
+/** Bike, scooter or e-hailing to the station. Short distances are still walked. */
+export const RIDE: Access = { id: "ride", radiusKm: 4, rings: 6, verb: "Walk or e-hail", reach: "a 4 km ride" };
+const RIDE_KMH = 20; // door to door in city traffic, once the vehicle is found
+const RIDE_FIXED_MIN = 4; // finding the vehicle, or parking and locking up
 
 export const BAND_LIMITS = [30, 45, 60] as const;
 
@@ -22,6 +38,14 @@ export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: numb
 /** Straight-line distance x detour factor / walking speed. */
 export function walkMinutes(km: number): number {
   return ((km * DETOUR_FACTOR) / WALK_KMH) * 60;
+}
+
+/** Minutes to cover `km` in a straight line by the given access mode, or null if out of reach. */
+export function accessMinutes(km: number, access: Access = WALK): number | null {
+  if (km > access.radiusKm) return null;
+  const walk = km <= WALK_RADIUS_KM ? walkMinutes(km) : Infinity;
+  if (access.id === "walk") return walk;
+  return Math.min(walk, ((km * DETOUR_FACTOR) / RIDE_KMH) * 60 + RIDE_FIXED_MIN);
 }
 
 /** 0: under 30, 1: 30-45, 2: 45-60, 3: over 60 (or unreachable). */
@@ -52,17 +76,18 @@ export interface Result {
 }
 
 /** The H3 grid of hexes that have at least one station in walking range. */
-export function buildHexes(stations: Station[]): Hex[] {
+export function buildHexes(stations: Station[], access: Access = WALK): Hex[] {
   const byId = new Map<string, Hex>();
   stations.forEach((s, station) => {
     const origin = latLngToCell(s.lat, s.lon, H3_RESOLUTION);
-    for (const id of gridDisk(origin, GRID_RINGS)) {
+    for (const id of gridDisk(origin, access.rings)) {
       const [lat, lon] = cellToLatLng(id);
       const km = haversineKm(lat, lon, s.lat, s.lon);
-      if (km > WALK_RADIUS_KM) continue;
+      const walk = accessMinutes(km, access);
+      if (walk === null) continue;
       let hex = byId.get(id);
       if (!hex) byId.set(id, (hex = { id, lat, lon, near: [] }));
-      hex.near.push({ station, walk: walkMinutes(km) });
+      hex.near.push({ station, walk });
     }
   });
   return [...byId.values()];
@@ -72,11 +97,13 @@ export function stationsNear(
   stations: Station[],
   lat: number,
   lon: number,
+  access: Access = WALK,
 ): { station: number; walk: number }[] {
   const out: { station: number; walk: number }[] = [];
   stations.forEach((s, station) => {
     const km = haversineKm(lat, lon, s.lat, s.lon);
-    if (km <= WALK_RADIUS_KM) out.push({ station, walk: walkMinutes(km) });
+    const walk = accessMinutes(km, access);
+    if (walk !== null) out.push({ station, walk });
   });
   return out;
 }
@@ -91,9 +118,10 @@ export function compute(
   hexes: Hex[],
   destLat: number,
   destLon: number,
+  access: Access = WALK,
 ): Result {
   const n = stations.length;
-  const destStations = stationsNear(stations, destLat, destLon);
+  const destStations = stationsNear(stations, destLat, destLon, access);
   const stationTimes = new Float64Array(n).fill(Infinity);
   const alightAt = new Int32Array(n).fill(-1);
   for (let s = 0; s < n; s++) {

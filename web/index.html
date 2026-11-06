@@ -62,13 +62,24 @@
           </section>
 
           <section>
-            <h2><span class="n">2</span> Read the map</h2>
+            <h2><span class="n">2</span> How do you get to a station?</h2>
+            <div id="access" class="seg" role="group" aria-label="How you get to a station">
+              <span class="thumb" aria-hidden="true"></span>
+              <button type="button" data-access="walk" class="on" aria-pressed="true">Walk</button>
+              <button type="button" data-access="ride" aria-pressed="false">Bike or e-hail</button>
+            </div>
+            <p class="small" id="access-note">Stations within a 1.5 km walk, at 4.5 km/h.</p>
+          </section>
+
+          <section>
+            <h2><span class="n">3</span> Read the map</h2>
             <p class="small" id="legend-title">Time from each area to your destination:</p>
             <ul id="legend"></ul>
             <p class="small">
               <strong>Tap a coloured area</strong> to see the trip: walk, train, changes.
-              Uncoloured areas have no station within a 1.5 km walk.
+              Uncoloured areas have no station within reach.
             </p>
+            <button type="button" id="share" class="btn wide">Copy a link to this map</button>
           </section>
 
           <details>
@@ -86,6 +97,10 @@
           <p id="net-lede">
             Every train on the weekday timetable, moving along its line. Tap a train to follow
             it, or a station to see what leaves next.
+          </p>
+          <p class="small" id="net-note">
+            Simulated from the published timetable, not live positions. Prasarana trains are
+            spaced by the timetable's average gap, so a real train can be a few minutes off.
           </p>
 
           <section id="net-clock">
@@ -122,6 +137,7 @@
         </div>
 
         <p id="status" role="status"></p>
+        <p id="data-info" class="small"></p>
       </div>
     </aside>
     <script type="module" src="/src/main.ts"></script>

@@ -79,6 +79,24 @@ function arrowImage(color: string): ImageData {
   return ctx.getImageData(0, 0, size, size);
 }
 
+const NET_NOTE =
+  "Simulated from the published timetable, not live positions. Prasarana trains are spaced by the timetable's average gap, so a real train can be a few minutes off.";
+
+/** Seconds since midnight in Kuala Lumpur, whatever timezone the visitor's device is in. */
+function malaysiaNow(): { seconds: number; weekend: boolean } {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kuala_Lumpur",
+    hourCycle: "h23",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+    weekday: "short",
+  }).formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "0";
+  const day = get("weekday");
+  return { seconds: Number(get("hour")) * 3600 + Number(get("minute")) * 60 + Number(get("second")), weekend: day === "Sat" || day === "Sun" };
+}
+
 export class NetworkView {
   private net: Network | null = null;
   private loading: Promise<void> | null = null;
@@ -284,8 +302,9 @@ export class NetworkView {
       b.addEventListener("click", () => this.jumpTo(Number(b.dataset.time)));
     });
     el("net-now").addEventListener("click", () => {
-      const d = new Date();
-      this.jumpTo(d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds());
+      const { seconds, weekend } = malaysiaNow();
+      this.jumpTo(seconds);
+      el("net-note").textContent = weekend ? `${NET_NOTE} It is the weekend in Malaysia, but this shows the weekday timetable.` : NET_NOTE;
     });
     this.map.on("dragstart", () => {
       this.following = false;

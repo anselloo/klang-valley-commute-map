@@ -6,6 +6,8 @@ export interface BreakdownInput {
   stationName: (index: number) => string;
   walkToDestination: { name: string; minutes: number };
   total: number;
+  /** "Walk" (default) or e.g. "Walk or e-hail"; used for the first and last leg. */
+  verb?: string;
 }
 
 export function escapeHtml(text: string): string {
@@ -17,7 +19,8 @@ const mins = (m: number) => `${Math.max(1, Math.round(m))} min`;
 /** One row per step of the door-to-door trip, then the total. */
 export function breakdownHtml(input: BreakdownInput): string {
   const rows: [string, string][] = [];
-  rows.push([`Walk to ${escapeHtml(input.walkToStation.name)}`, mins(input.walkToStation.minutes)]);
+  const verb = escapeHtml(input.verb ?? "Walk");
+  rows.push([`${verb} to ${escapeHtml(input.walkToStation.name)}`, mins(input.walkToStation.minutes)]);
   for (const seg of input.route.segments) {
     if (seg.kind === "wait") {
       rows.push([`Wait for ${escapeHtml(seg.line)}`, `~${mins(seg.minutes)}`]);
@@ -36,7 +39,7 @@ export function breakdownHtml(input: BreakdownInput): string {
       rows.push([`Change at ${escapeHtml(input.stationName(seg.station))}`, mins(seg.minutes)]);
     }
   }
-  rows.push([`Walk to ${escapeHtml(input.walkToDestination.name)}`, mins(input.walkToDestination.minutes)]);
+  rows.push([`${verb} to ${escapeHtml(input.walkToDestination.name)}`, mins(input.walkToDestination.minutes)]);
 
   const body = rows.map(([label, time]) => `<tr><td>${label}</td><td class="t">${time}</td></tr>`).join("");
   return `<table class="breakdown">${body}<tr class="total"><td>Total</td><td class="t">${mins(input.total)}</td></tr></table>`;
