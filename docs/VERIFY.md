@@ -29,11 +29,11 @@ Model figures are station to station (they include the average wait) and come fr
 | Kajang | KL Sentral | 54 | | MRT then change |
 | Sungai Buloh | Bukit Bintang | 43 | | MRT, one line |
 | Ampang | KLCC | 34 | | LRT then change |
-| Putra Heights | KL Sentral | ~60 | | longest single-line trip |
-| Klang | KL Sentral | ~70 | | KTM Komuter, sparse trains |
-| KL Sentral | KLIA | 38 | | KLIA Ekspres, 28 min ride plus wait |
-| KL Sentral | KLIA2 | 43 | | KLIA Ekspres |
-| Putrajaya Sentral | KLIA | 31 | | KLIA Transit |
+| Putra Heights | KL Sentral | 55 | | longest single-line trip |
+| Klang | KL Sentral | 81 | | KTM Komuter, sparse trains |
+| KL Sentral | KLIA | 36 | | KLIA Ekspres, 28 min ride plus wait |
+| KL Sentral | KLIA2 | 41 | | KLIA Ekspres |
+| Putrajaya Sentral | KLIA | 24 | | KLIA Transit |
 
 ## Known limits of the model (not bugs)
 
