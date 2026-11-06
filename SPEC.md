@@ -132,7 +132,7 @@ Fixes from a review of the whole app.
 - **KLIA Ekspres / Transit:** entered by hand (`data/erl.json`, positions from OpenStreetMap, times and peak/off-peak gaps from ERL's published schedule), in the commute map and drawn in the train view on their OpenStreetMap track with an ERL badge.
 - **Walking calibration:** the detour factor is 1.6, measured against pedestrian routing (see above); interchange walk times in `data/transfers.json` were checked the same way and four were corrected. `scripts/calibrate_walking.py` reproduces both.
 - **Still to do by a person:** compare the times with Google Maps using [docs/VERIFY.md](docs/VERIFY.md) (no way to query it from the build), and re-check the ERL Transit frequency.
-- **Still not covered:** rents (searched: no open dataset exists, only paid or scraped listings), buses other than the MRT feeders, late-night timetables, a walking link between Klang's KTM and BRT stops (they are about 3 km apart), and a fallback if the free base-map service is down.
+- **Still not covered:** rents (searched: DOSM publishes household income and expenditure by parliamentary constituency and state-level house price indices, but no rent by area; the rest is paid or scraped listings), buses other than the MRT feeders, late-night timetables, a walking link between Klang's KTM and BRT stops (they are about 3 km apart), and a fallback for satellite imagery. If the OpenFreeMap style cannot be fetched (7 s timeout) the app falls back to plain OpenStreetMap raster tiles with a notice, and everything else works.
 
 ## Later ideas (parking lot, don't build yet)
 - Add Rapid KL buses and MRT feeder buses

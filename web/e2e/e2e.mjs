@@ -213,6 +213,19 @@ await page.click("#when button[data-when='am']");
 await page.click("#access button[data-access='walk']");
 await page.waitForTimeout(1500);
 
+// If the base-map style service is down, the app falls back to plain OSM tiles and still works.
+const down = await browser.newPage({ viewport: { width: 1200, height: 800 } });
+await down.route("**/tiles.openfreemap.org/**", (route) => route.abort());
+await down.goto(base + "?debug", { waitUntil: "load" });
+await down.waitForTimeout(6000);
+const downState = await down.evaluate(() => ({
+  summary: document.getElementById("summary").innerText,
+  status: document.getElementById("status").innerText,
+  layers: ["osm", "hex-fill", "station-dots"].map((id) => !!window.__map.getLayer(id)),
+}));
+ok("app still works when the base-map style is unreachable", downState.summary.startsWith("Train time to") && downState.layers.every(Boolean) && /simpler map/.test(downState.status), JSON.stringify(downState));
+await down.close();
+
 console.log(errors.length ? "ERRORS: " + errors.join(" | ") : "no page errors");
 await browser.close();
 if (failed || errors.length) {

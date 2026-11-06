@@ -15,6 +15,29 @@ import type { Station } from "./types";
 maplibregl.setWorkerUrl(new URL(workerUrl, document.baseURI).href);
 
 const STYLE_URL = "https://tiles.openfreemap.org/styles/bright";
+/** Used when the OpenFreeMap style cannot be fetched: plain OpenStreetMap tiles, with fonts from MapLibre's demo server. */
+const FALLBACK_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+  sources: {
+    osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, maxzoom: 19, attribution: "© OpenStreetMap contributors" },
+  },
+  layers: [{ id: "osm", type: "raster", source: "osm" }],
+};
+let usingFallbackStyle = false;
+/** The detailed style, or the fallback when the free service is down or too slow. */
+async function loadStyle(): Promise<maplibregl.StyleSpecification> {
+  try {
+    const res = await fetch(STYLE_URL, { signal: AbortSignal.timeout(7000) });
+    if (!res.ok) throw new Error(String(res.status));
+    const style = (await res.json()) as maplibregl.StyleSpecification;
+    if (!Array.isArray(style.layers)) throw new Error("not a style");
+    return style;
+  } catch {
+    usingFallbackStyle = true;
+    return FALLBACK_STYLE;
+  }
+}
 const KL_CENTER: [number, number] = [101.6869, 3.139];
 const BAND_COLORS = ["#0b5394", "#3d8fd1", "#9cc9ec", "#d4d4d4"];
 const BAND_LABELS = ["Under 30 min", "30–45 min", "45–60 min", "Over 60 min"];
@@ -83,7 +106,6 @@ el("grabber").addEventListener("click", () => setCollapsed(!panel.classList.cont
 
 const map = new maplibregl.Map({
   container: "map",
-  style: STYLE_URL,
   center: KL_CENTER,
   zoom: 10.3,
   maxBounds: [[100.9, 2.5], [102.4, 3.8]],
@@ -91,6 +113,7 @@ const map = new maplibregl.Map({
 });
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 const basemap = new BasemapController(map);
+void loadStyle().then((style) => map.setStyle(style));
 
 // `?debug` exposes the map for automated browser checks.
 if (new URLSearchParams(location.search).has("debug")) (window as unknown as { __map: maplibregl.Map }).__map = map;
@@ -208,6 +231,11 @@ async function start() {
   let hexes = buildHexes(stations, access, feeder);
   let hexIndex = new Map(hexes.map((h, i) => [h.id, i]));
   basemap.init();
+  const noteFallback = () => {
+    if (usingFallbackStyle) {
+      statusEl.textContent += " The detailed base map service is not responding, so a simpler map is shown; everything else works as usual.";
+    }
+  };
   addMapLayers(stations, hexes);
   if (isPhone()) {
     // MapLibre opens its attribution by default; on a phone it would cover a third of the map.
@@ -641,6 +669,7 @@ async function start() {
     showAccess();
     await setDestination({ lng: sharedLng, lat: sharedLat, label: name, chip: QUICK_PICKS.find((p) => p.label === name)?.label });
     setCollapsed(isPhone());
+    noteFallback();
     return;
   }
 
@@ -656,6 +685,7 @@ async function start() {
   start?.blur();
   peekEl.textContent = PEEK_EXAMPLE;
   statusEl.textContent = "This is an example. Change the destination in step 1 to see your own commute.";
+  noteFallback();
 }
 
 start().catch((err) => {
