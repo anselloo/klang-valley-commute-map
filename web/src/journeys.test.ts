@@ -156,19 +156,19 @@ describe("KLIA Ekspres and Transit", () => {
   });
 });
 
-describe("feeder buses", () => {
+describe("bus links", () => {
   const feeder = JSON.parse(readFileSync(new URL("../../data/feeder.json", import.meta.url), "utf-8")) as FeederStop[];
 
-  it("links many bus stops to rail stations with believable times", () => {
-    expect(feeder.length).toBeGreaterThan(1000);
+  it("links many bus stops to rail stations (feeder and city routes) with believable times", () => {
+    expect(feeder.length).toBeGreaterThan(3000);
     for (const [lat, lon, links] of feeder) {
       expect(lat).toBeGreaterThan(2.5);
       expect(lon).toBeGreaterThan(100.9);
       for (const [station, to, from, route] of links) {
         expect(station).toBeLessThan(stations.length);
         expect(to).toBeGreaterThan(2);
-        expect(to).toBeLessThan(120);
-        expect(from).toBeLessThan(120);
+        expect(to).toBeLessThanOrEqual(75);
+        expect(from).toBeLessThanOrEqual(75);
         expect(route.length).toBeGreaterThan(0);
       }
     }

@@ -230,7 +230,7 @@ async function start() {
   /** Trips a week to A and to B, used by the "Average trip" measure. */
   const weights = (initial.get("w") ?? "5,5").split(",").map((x) => Math.min(14, Math.max(0, Math.round(Number(x)) || 0)));
   while (weights.length < 2) weights.push(5);
-  /** Feeder bus stops for the chosen time of day; empty unless the bus option is on. */
+  /** Bus stops with a direct bus to a station, for the chosen time of day; empty unless the bus option is on. */
   let feeder: FeederStop[] = access.id === "bus" ? await getFeeder(when) : [];
   let hexes = buildHexes(stations, access, feeder);
   let hexIndex = new Map(hexes.map((h, i) => [h.id, i]));
@@ -351,7 +351,7 @@ async function start() {
       access.id === "walk"
         ? "Stations within a 1.5 km walk, at 4.5 km/h."
         : access.id === "bus"
-          ? "A walk of up to 1.5 km to a station, or up to 500 m to a Rapid KL feeder bus stop whose bus goes to one (53 stations have them). Includes the wait for the bus."
+          ? "A walk of up to 1.5 km to a station, or up to 500 m to a Rapid KL bus stop (feeder or city route) whose bus goes straight to one. Includes the wait for the bus, but no bus-to-bus changes."
           : "Walk to stations up to 1.5 km away; beyond that, a bike, scooter or e-hailed car up to 4 km at about 20 km/h, plus 4 minutes to get going.";
   }
 
@@ -389,7 +389,7 @@ async function start() {
     await update();
   }
 
-  /** The grid depends on how you reach a station (and, for feeder buses, on the time of day). */
+  /** The grid depends on how you reach a station (and, for buses, on the time of day). */
   async function rebuildHexes() {
     feeder = access.id === "bus" ? await getFeeder(when) : [];
     hexes = buildHexes(stations, access, feeder);

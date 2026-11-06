@@ -11,7 +11,7 @@ Live site: https://anselloo.github.io/klang-valley-commute-map/
 The site opens on a worked example (KL Sentral) so you can see what it shows straight away. Then:
 
 1. **Choose where you work or study**: search a place, tap a quick pick (KL Sentral, KLCC, Bukit Bintang, Mid Valley, Subang Jaya, Sunway), or choose "pick a spot on the map". You can also drag the pin. **Add a second destination (B)** for a second place you need to reach, such as another workplace, a campus or family, and the map shades each area by the *longer* of the two commutes, so "under 45 minutes" means both are; tapping an area shows both trips. Switch to **Average trip** to weight each destination by how many trips a week you make to it.
-2. **Say how you get to a station**: on foot (up to 1.5 km); on foot plus a Rapid KL **feeder bus** (a walk of up to 500 m to a stop whose bus goes to one of the 53 stations that have feeders, with the wait for the bus included); or by bike, scooter or e-hailed car (up to 4 km, about 20 km/h plus 4 minutes to get going). The last two make the map cover far more of the valley, which is closer to how most people commute.
+2. **Say how you get to a station**: on foot (up to 1.5 km); on foot plus a Rapid KL **bus** (a walk of up to 500 m to a stop, feeder or city route, whose bus goes straight to one of about 125 stations, with the wait for the bus included; no bus-to-bus changes); or by bike, scooter or e-hailed car (up to 4 km, about 20 km/h plus 4 minutes to get going). The last two make the map cover far more of the valley, which is closer to how most people commute.
 3. **Choose when, and which way**: weekday morning (the default), weekday evening, Saturday or Sunday, and either the trip *to* your destination or the trip *back* from it. Evening plus "coming back" shows the commute home.
 4. **Read the map**: an H3 hex grid is shaded by total door-to-door travel time to (or from) your destination at the time you chose (under 30 min, 30–45, 45–60, over 60). Uncoloured areas have no station within reach. Tap any coloured area for the trip: walk, wait, each ride with its line and stops, changes, and the final walk.
 
@@ -35,7 +35,7 @@ The **Train network** tab shows every train on the weekday timetable moving alon
 - **Tap a station** for its next departures by line and direction, or use it as your destination in the commute view.
 - **Tap a line** (on the map or in the list) to focus on it; the list also shows how many trains each line has running.
 
-Rail only: LRT, MRT, Monorail, BRT Sunway, KTM Komuter and KLIA Ekspres / KLIA Transit (entered by hand from `data/erl.json`, since they are in neither feed), plus Rapid KL's MRT feeder buses as a way of reaching a station. No other buses, no real-time data, no backend. See [SPEC.md](SPEC.md).
+Rail only: LRT, MRT, Monorail, BRT Sunway, KTM Komuter and KLIA Ekspres / KLIA Transit (entered by hand from `data/erl.json`, since they are in neither feed), plus Rapid KL's buses (MRT feeders and city routes) as a way of reaching a station by a single direct bus. No bus-to-bus changes, no other operators, no real-time data, no backend. See [SPEC.md](SPEC.md).
 
 ## How it works
 
@@ -58,7 +58,7 @@ python scripts/gtfs_check.py
 
 # 2. Rebuild the data in /data (committed, so this is optional)
 python scripts/build_matrix.py          # stations.json, matrix.json, graph.json (add --refresh to re-download the feeds)
-python scripts/build_feeder.py          # feeder.json (and -pm/-sat/-sun): feeder bus links, from the Rapid KL feeder feed
+python scripts/build_feeder.py          # feeder.json (and -pm/-sat/-sun): bus-to-station links, from the Rapid KL feeder and city bus feeds
 python scripts/build_network.py         # network.json, for the train network view
 python scripts/calibrate_walking.py    # one-off: checks the walking assumptions against pedestrian routing on OpenStreetMap
 python scripts/validate_data.py         # sanity-checks the generated data (the monthly refresh runs this too)
@@ -95,7 +95,7 @@ SPEC.md      the v1 spec
 ## Caveats
 
 - **Estimates, not a journey planner.** Waits are half the average headway (capped at 20 minutes), not a real timetable lookup, and walking ignores roads and rivers. The times have **not** yet been compared with Google Maps; [docs/VERIFY.md](docs/VERIFY.md) is the checklist for doing that.
-- **Not in the data:** rents. Malaysia's open data portal has household income and spending by parliamentary constituency (DOSM Household Income and Expenditure Survey) and state-level house price indices, but no rent by area; the rest is paid or scraped listing data (SPEEDHOME, IQI, EdgeProp, PropertyGuru). A made-up or scraped overlay would mislead, so there is none. Also not in the data: buses other than the MRT feeders, and late-night timetables. Without rents the map answers "how far by train", not "where should I live". KLIA Ekspres / Transit were added by hand from ERL's published schedule (`data/erl.json`); the Transit frequency is the least certain figure.
+- **Not in the data:** rents. Malaysia's open data portal has household income and spending by parliamentary constituency (DOSM Household Income and Expenditure Survey) and state-level house price indices, but no rent by area; the rest is paid or scraped listing data (SPEEDHOME, IQI, EdgeProp, PropertyGuru). A made-up or scraped overlay would mislead, so there is none. Also not in the data: bus-to-bus changes and operators other than Rapid KL, and late-night timetables. Without rents the map answers "how far by train", not "where should I live". KLIA Ekspres / Transit were added by hand from ERL's published schedule (`data/erl.json`); the Transit frequency is the least certain figure.
 - **Free third-party services.** Search (Nominatim, with Photon as a fallback), the base map (OpenFreeMap, with plain OpenStreetMap tiles as a fallback when its style cannot be fetched, with a notice) and satellite (Esri) are free and come with no guarantee, and heavy traffic could get the site throttled. There is no fallback for satellite imagery.
 - **Feed gaps show up.** The KTM feed has few trains on some lines (for example the Port Klang line), so some KTM stations look slow. The Kelana Jaya line takes about 98 minutes end to end in the Prasarana feed.
 - **Transfer walk times are guesses.** The walks in `data/transfers.json` are estimates and are worth checking on the ground.

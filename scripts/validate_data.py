@@ -68,8 +68,8 @@ def main():
 
     for name in ("feeder.json", "feeder-pm.json", "feeder-sat.json", "feeder-sun.json"):
         feeder = load(name)
-        if len(feeder) < 1000:
-            problems.append(f"{name} has only {len(feeder)} bus stops (expected over 1000)")
+        if len(feeder) < 3000:
+            problems.append(f"{name} has only {len(feeder)} bus stops (expected over 3000)")
         elif any(link[0] >= n for row in feeder for link in row[2]):
             problems.append(f"{name} points at a station that does not exist")
 

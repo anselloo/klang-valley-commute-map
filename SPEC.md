@@ -17,7 +17,7 @@ People choosing where to rent or buy who want to rely on public transport. v1 as
 6. A short numbered guide in a side panel (a bottom sheet on phones) explains the steps and the legend, so a first-time visitor knows what to do.
 
 ## Explicitly NOT in v1
-- Buses and MRT feeder buses (still not built: the bus feeds have thousands of stops, which this design cannot handle)
+- Buses as transit legs (v3.1/v4.2 only use Rapid KL buses as a way of reaching a station by one direct bus; the bus network is not part of the route search)
 - Real-time data (static schedules are enough for "where should I live")
 - User accounts, saved locations, or any backend
 - Driving or e-hailing comparisons (v3 adds bike / e-hail only as a way of reaching a station)
@@ -121,18 +121,18 @@ An animated view of the rail network on the same map, as a second tab next to th
 ## v3 and v3.1: practicality and trust (built)
 Fixes from a review of the whole app. v3 was the first batch (access modes, shareable links, honest labels, wait fixes, search resilience, data checks, evening and Saturday, ERL in the commute map). v3.1 followed with feeder buses, Sunday, ERL in the train view, walking calibration against real routing, and the base-map fallback. The list below covers both.
 
-- **Getting to a station:** Walk (1.5 km), Feeder bus, or Bike / e-hail (4 km, about 20 km/h plus 4 minutes). Shorter distances are still walked, so the second mode never gives a worse time. This addresses the main impracticality of the train-only map: most of the valley is more than 1.5 km from a station.
+- **Getting to a station:** Walk (1.5 km), Bus, or Bike / e-hail (4 km, about 20 km/h plus 4 minutes). Shorter distances are still walked, so the second mode never gives a worse time. This addresses the main impracticality of the train-only map: most of the valley is more than 1.5 km from a station.
 - **Shareable links:** the address bar holds the destination and access mode (`#to=lat,lng&name=...&via=ride`); a shared link opens on it. A "Copy a link" button sits under the legend.
 - **Honesty about the data:** "Timetable data built <date>" in the panel (from `data/meta.json`), a warning once part of a timetable has expired, and a note in the network view that trains are simulated from the timetable. "Now" uses Kuala Lumpur time, and says when it is the weekend that the weekday timetable is shown.
 - **Waits:** the average gap used for waits is capped at 40 minutes, and stops with no train in the morning window fall back to the day's average gap. The review's sanity tests found stops with 100+ minute waits and a Kajang to Kajang 2 hop that took 110 minutes one way and 18 the other; both are gone.
 - **Search resilience:** station names are matched locally first, results are cached, requests are spaced at least 1.1 s apart, and Photon is tried when Nominatim fails.
 - **Data safety:** `scripts/validate_data.py` runs in the monthly refresh before anything is committed, and fails on a large drop in stations, lines or trips, or on unreachable pairs. Browser checks live in `web/e2e/` and run in CI (`.github/workflows/e2e.yml`). Plausibility tests on real journeys, speeds and symmetry are in `web/src/journeys.test.ts`.
 - **Time of day and direction:** weekday morning, weekday evening, Saturday and Sunday, each with its own matrix and graph over the same stations, and a "coming back" direction that reads the matrix the other way round.
-- **Feeder buses:** Rapid KL's MRT feeder GTFS (about 90 routes, 2,000 stops, real trips) is reduced by `scripts/build_feeder.py` to the best way from each bus stop to a rail station and back, per time period (`feeder*.json`, 53 stations have feeders). The "Feeder bus" choice lets a place reach the rail network by a walk of up to 500 m to such a stop, with the wait for the bus included; the trip breakdown names the route. Other buses are still out of scope.
+- **Feeder buses (v3.1), widened to city buses (v4.2):** Rapid KL's MRT feeder GTFS (about 90 routes, 2,000 stops, real trips) and city bus GTFS (about 140 routes, 4,000 stops, trips as frequencies) are reduced by `scripts/build_feeder.py` to the best way from each bus stop to a rail station and back by one direct bus, per time period (`feeder*.json`; about 3,300 stops reach about 125 stations; links over 75 minutes are dropped). The "Bus" choice lets a place reach the rail network by a walk of up to 500 m to such a stop, with the wait for the bus included; the trip breakdown names the route. Bus-to-bus changes and other operators are still out of scope.
 - **KLIA Ekspres / Transit:** entered by hand (`data/erl.json`, positions from OpenStreetMap, times and peak/off-peak gaps from ERL's published schedule), in the commute map and drawn in the train view on their OpenStreetMap track with an ERL badge.
 - **Walking calibration:** the detour factor is 1.6, measured against pedestrian routing (see above); interchange walk times in `data/transfers.json` were checked the same way and four were corrected. `scripts/calibrate_walking.py` reproduces both.
 - **Still to do by a person:** compare the times with Google Maps using [docs/VERIFY.md](docs/VERIFY.md) (no way to query it from the build), and re-check the ERL Transit frequency.
-- **Still not covered:** rents (searched: DOSM publishes household income and expenditure by parliamentary constituency and state-level house price indices, but no rent by area; the rest is paid or scraped listings), buses other than the MRT feeders, late-night timetables, a walking link between Klang's KTM and BRT stops (they are about 3 km apart), and a fallback for satellite imagery. If the OpenFreeMap style cannot be fetched (7 s timeout) the app falls back to plain OpenStreetMap raster tiles with a notice, and everything else works.
+- **Still not covered:** rents (searched: DOSM publishes household income and expenditure by parliamentary constituency and state-level house price indices, but no rent by area; the rest is paid or scraped listings), bus-to-bus changes and operators other than Rapid KL, late-night timetables, a walking link between Klang's KTM and BRT stops (they are about 3 km apart), and a fallback for satellite imagery. If the OpenFreeMap style cannot be fetched (7 s timeout) the app falls back to plain OpenStreetMap raster tiles with a notice, and everything else works.
 
 ## v4: compare two destinations (built)
 For anyone with two places to reach: two workplaces, a workplace and a campus, or a workplace and family.
@@ -149,6 +149,6 @@ For anyone with two places to reach: two workplaces, a workplace and a campus, o
 - The link carries it (`&m=avg&w=5,2`). Logic is `combine()` in `web/src/model.ts`, with unit tests for the maths and edge cases.
 
 ## Later ideas (parking lot, don't build yet)
-- Rapid KL city buses (the MRT feeder buses are done; the rest have thousands of stops and bus-to-bus changes)
+- Buses as part of the route search (bus-to-bus and bus-to-train changes along the way). Today buses only get you to a station by one direct bus.
 - Penang and Johor Bahru versions (first check the Klang Valley times against Google Maps)
 - Rents were dropped: no open dataset, and the listing sites forbid scraping

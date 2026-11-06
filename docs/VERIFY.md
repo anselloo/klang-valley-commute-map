@@ -44,8 +44,9 @@ Model figures are station to station (they include the average wait) and come fr
 - **ERL is hand-entered.** KLIA Ekspres and KLIA Transit are in neither feed, so `data/erl.json` holds
   their stops (from OpenStreetMap) and the ride times and gaps from ERL's published schedule
   (kliaekspres.com, 1 Aug 2023). Transit's frequency is the least certain figure.
-- **Buses:** only Rapid KL's MRT feeder buses are modelled, as a way of reaching a station (53 stations).
-  Other bus routes, and any bus-to-bus change, are not.
+- **Buses:** Rapid KL's feeder and city buses are modelled only as a way of reaching a station by one
+  direct bus (about 125 stations have one). Bus-to-bus changes, other operators and buses as the main
+  mode of a trip are not.
 - **Walking is straight-line x 1.6.** Measured against pedestrian routing (`scripts/calibrate_walking.py`)
   the median is 1.8x and the lower quartile 1.5x; one in ten spots needs more than 5x because of highways,
   rivers and missing footbridges. The model uses 1.6 on average, so those spots are still too optimistic.

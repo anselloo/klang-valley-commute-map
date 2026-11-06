@@ -25,10 +25,10 @@ export interface Access {
   reach: string;
 }
 export const WALK: Access = { id: "walk", radiusKm: WALK_RADIUS_KM, rings: 3, verb: "Walk", reach: "a 1.5 km walk" };
-/** Walking, plus feeder buses: a stop within BUS_STOP_KM is a way onto the rail network. */
-export const BUS: Access = { id: "bus", radiusKm: WALK_RADIUS_KM, rings: 3, verb: "Walk", reach: "a 1.5 km walk or a feeder bus" };
+/** Walking, plus Rapid KL buses: a stop within BUS_STOP_KM with a direct bus to a station is a way onto the rail network. */
+export const BUS: Access = { id: "bus", radiusKm: WALK_RADIUS_KM, rings: 3, verb: "Walk", reach: "a 1.5 km walk or a direct bus" };
 export const BUS_STOP_KM = 0.5;
-/** A feeder bus stop: lat, lon, and the stations it reaches [station, minutes to it, minutes from it, route]. */
+/** A bus stop with a direct bus to a station: lat, lon, and the stations it reaches [station, minutes to it, minutes from it, route]. */
 export type FeederStop = [number, number, [number, number, number, string][]];
 /** Bike, scooter or e-hailing to the station. Short distances are still walked. */
 export const RIDE: Access = { id: "ride", radiusKm: 4, rings: 6, verb: "Walk or e-hail", reach: "a 4 km ride" };
@@ -77,7 +77,7 @@ export interface Hex {
   lat: number;
   lon: number;
   /** Ways onto the rail network: the station, minutes to reach it, and minutes from it back to here
-   *  (when different), plus the bus route when a feeder bus is used. */
+   *  (when different), plus the bus route when a bus is used. */
   near: Near[];
 }
 
