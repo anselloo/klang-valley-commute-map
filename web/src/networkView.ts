@@ -1,5 +1,6 @@
 import * as maplibregl from "maplibre-gl";
 import { escapeHtml } from "./breakdown";
+import { readableText } from "./color";
 import { DAY, formatClock, Network, type NetworkData, type Train } from "./network";
 import type { Station } from "./types";
 
@@ -14,7 +15,17 @@ const END_OF_SERVICE = 90000; // 01:00 the next day
 const FRAME_MS = 33; // about 30 updates a second is plenty for 200 small markers
 const REVEAL_MS = 1500;
 
+const ICON_PAUSE = `<svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><rect x="4.5" y="3.5" width="4" height="13" rx="1.2" fill="currentColor"/><rect x="11.5" y="3.5" width="4" height="13" rx="1.2" fill="currentColor"/></svg>`;
+const ICON_PLAY = `<svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M6 3.8v12.4c0 .8.9 1.3 1.6.9l9.2-6.2c.6-.4.6-1.3 0-1.7L7.6 2.9C6.9 2.5 6 3 6 3.8z" fill="currentColor"/></svg>`;
+
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+
+/** Short code for a line's badge: the line's own name when short (KJL), otherwise "KTM". */
+const lineCode = (name: string) => (name.length <= 4 ? name : "KTM");
+/** The wording that goes next to the badge when the badge alone does not name the line. */
+const lineSuffix = (name: string) => (name.length <= 4 ? "" : `${escapeHtml(name)} `);
+const badge = (name: string, color: string) =>
+  `<span class="badge" style="background:${color};color:${readableText(color)}">${escapeHtml(lineCode(name))}</span>`;
 const minutesText = (seconds: number) =>
   seconds < 30 ? "now" : seconds < 90 ? "1 min" : `${Math.round(seconds / 60)} min`;
 
@@ -237,12 +248,15 @@ export class NetworkView {
     });
     el("net-play").addEventListener("click", () => this.setPlaying(!this.playing));
     el("head-play").addEventListener("click", () => this.setPlaying(!this.playing));
-    document.querySelectorAll<HTMLButtonElement>("#net-speed button").forEach((b) => {
-      b.addEventListener("click", () => {
-        this.speed = Number(b.dataset.speed);
-        document.querySelectorAll<HTMLButtonElement>("#net-speed button").forEach((o) => o.classList.toggle("on", o === b));
-      });
-    });
+    const speedButtons = [...document.querySelectorAll<HTMLButtonElement>("#net-speed button")];
+    const showSpeed = (b: HTMLButtonElement) => {
+      this.speed = Number(b.dataset.speed);
+      speedButtons.forEach((o) => o.classList.toggle("on", o === b));
+      el("net-speed").style.setProperty("--i", String(speedButtons.indexOf(b)));
+    };
+    speedButtons.forEach((b) => b.addEventListener("click", () => showSpeed(b)));
+    showSpeed(speedButtons.find((b) => b.classList.contains("on")) ?? speedButtons[0]);
+    this.setPlaying(true);
     document.querySelectorAll<HTMLButtonElement>("#net-jumps button[data-time]").forEach((b) => {
       b.addEventListener("click", () => this.jumpTo(Number(b.dataset.time)));
     });
@@ -257,9 +271,9 @@ export class NetworkView {
 
   private setPlaying(on: boolean) {
     this.playing = on;
-    el("net-play").textContent = on ? "❚❚ Pause" : "▶ Play";
+    el("net-play").innerHTML = `${on ? ICON_PAUSE : ICON_PLAY}<span>${on ? "Pause" : "Play"}</span>`;
     el("net-play").setAttribute("aria-label", on ? "Pause trains" : "Play trains");
-    el("head-play").textContent = on ? "❚❚" : "▶";
+    el("head-play").innerHTML = on ? ICON_PAUSE : ICON_PLAY;
     el("head-play").setAttribute("aria-label", on ? "Pause trains" : "Play trains");
     this.lastFrame = performance.now();
   }
@@ -279,8 +293,8 @@ export class NetworkView {
       .map(
         (l, i) =>
           `<li><button type="button" class="line-row" data-line="${i}">` +
-          `<span class="swatch" style="background:${l.color}"></span>` +
-          `<span class="line-name"><strong>${escapeHtml(l.name)}</strong> <span class="small">${escapeHtml(l.mode)}</span></span>` +
+          badge(l.name, l.color) +
+          `<span class="line-name">${escapeHtml(l.mode === "KTM Komuter" ? l.name : l.longName)} <span class="small">${escapeHtml(l.mode)}</span></span>` +
           `<span class="line-count" id="line-count-${i}"></span></button></li>`,
       )
       .join("");
@@ -454,7 +468,9 @@ export class NetworkView {
     const net = this.net;
     const t = this.simTime % DAY;
     el("net-time").textContent = formatClock(this.simTime);
-    el<HTMLInputElement>("net-slider").value = String(this.simTime);
+    const slider = el<HTMLInputElement>("net-slider");
+    slider.value = String(this.simTime);
+    slider.style.setProperty("--p", `${((this.simTime - START_OF_SERVICE) / (END_OF_SERVICE - START_OF_SERVICE)) * 100}%`);
     const counts = net.countByLine(t);
     const running = counts.reduce((a, b) => a + b, 0);
     el("net-count").textContent = running ? `${running} trains running` : "No trains running yet";
@@ -494,8 +510,8 @@ export class NetworkView {
       return {
         peek: `${line.name} to ${dest.name}: ${followed.stopped ? `stopped at ${stop.name}` : `next ${stop.name} in ${minutesText(followed.secondsToNext)}`}`,
         html:
-          `<div class="card"><div class="card-title"><span class="swatch" style="background:${line.color}"></span>` +
-          `<strong>${escapeHtml(line.name)}</strong> to ${escapeHtml(dest.name)}</div>` +
+          `<div class="card"><div class="card-title">${badge(line.name, line.color)}` +
+          `<span>${lineSuffix(line.name)}to ${escapeHtml(dest.name)}</span></div>` +
           `<p>${next}</p>` +
           `<div class="card-actions"><button type="button" id="follow-toggle">${this.following ? "Stop following" : "Follow this train"}</button>` +
           `<button type="button" id="follow-close">Close</button></div></div>`,
@@ -517,8 +533,8 @@ export class NetworkView {
             .slice(0, 8)
             .map(
               (d) =>
-                `<li><span class="swatch" style="background:${net.lines[d.line].color}"></span>` +
-                `<span class="dep-text"><strong>${escapeHtml(net.lines[d.line].name)}</strong> to ${escapeHtml(this.stations[d.destination].name)}</span>` +
+                `<li>${badge(net.lines[d.line].name, net.lines[d.line].color)}` +
+                `<span class="dep-text">${lineSuffix(net.lines[d.line].name)}to ${escapeHtml(this.stations[d.destination].name)}</span>` +
                 `<span class="dep-time">${minutesText(d.inSeconds)}</span></li>`,
             )
             .join("")

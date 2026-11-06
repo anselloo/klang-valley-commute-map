@@ -2,7 +2,7 @@
 
 Pick where you work or study, and see every part of the Klang Valley you could live in and get there by train within 30, 45 or 60 minutes.
 
-![Commute map shaded around Subang Jaya, with a trip breakdown open](docs/screenshot.png)
+![Commute map shaded by train time to KLCC](docs/screenshot.png)
 
 Live site: https://anselloo.github.io/klang-valley-commute-map/
 
@@ -12,6 +12,10 @@ The site opens on a worked example (KL Sentral) so you can see what it shows str
 
 1. **Choose where you work or study**: search a place, tap a quick pick (KL Sentral, KLCC, Bukit Bintang, Mid Valley, Subang Jaya, Sunway), or choose "pick a spot on the map". You can also drag the pin.
 2. **Read the map**: an H3 hex grid is shaded by total door-to-door travel time to your destination, for a weekday morning commute (under 30 min, 30–45, 45–60, over 60). Uncoloured areas have no station within a 1.5 km walk. Tap any coloured area for the trip: walk, wait, each ride with its line and stops, changes, and the final walk.
+
+A **Map / Satellite** switch (top right) changes the base map without losing your destination or the shading; the choice is remembered. The interface follows your device's light or dark appearance.
+
+![The same view on satellite imagery](docs/satellite.png)
 
 Shading updates in a few milliseconds. On a phone the controls sit in a bottom sheet that collapses to a short strip, so the map stays in view.
 
@@ -84,11 +88,14 @@ SPEC.md      the v1 spec
 - **Feed gaps show up.** The KTM feed has long gaps on some lines in the morning peak (for example the Port Klang line), so some KTM stations look slow. The Kelana Jaya line takes about 98 minutes end to end in the Prasarana feed.
 - **Transfer walk times are guesses.** The walks in `data/transfers.json` are estimates and are worth checking on the ground.
 - **The train network is a simulation.** Prasarana trains are generated from published headways, not an exact timetable, so an individual train will not match a real one. KTM trips that start or end outside the Klang Valley are cut at its edge.
+- **Satellite imagery** is hosted by a third party (Esri); it can be slower than the vector map and may be older than the map data.
 - **KTM schedule expiry.** The KTM calendar in the feed has an end date; the monthly refresh picks up new schedules.
 
 ## Data and credits
 
 - GTFS static feeds from Malaysia's open data portal, [developer.data.gov.my](https://developer.data.gov.my/): Prasarana (`rapid-rail-kl`) and KTMB.
-- Base map: [OpenFreeMap](https://openfreemap.org/) with [OpenStreetMap](https://www.openstreetmap.org/copyright) data, rendered with [MapLibre GL JS](https://maplibre.org/). KTM Komuter track geometry is also © OpenStreetMap contributors (ODbL).
+- Base map: [OpenFreeMap](https://openfreemap.org/) (the Bright style, with the roads softened) with [OpenStreetMap](https://www.openstreetmap.org/copyright) data, rendered with [MapLibre GL JS](https://maplibre.org/).
+- Satellite: Esri World Imagery (© Esri, Maxar, Earthstar Geographics and the GIS User Community), loaded as map tiles with the attribution the service asks for. Esri's public imagery service is intended for light use; if this site gets heavy traffic, check Esri's terms or switch to a licensed imagery provider.
+- Type: [Inter](https://rsms.me/inter/) (SIL Open Font License) is bundled as the stand-in for Apple's San Francisco font, which the page uses directly on Apple devices. KTM Komuter track geometry is also © OpenStreetMap contributors (ODbL).
 - Search: [Nominatim](https://nominatim.org/), one request per search.
 - Hex grid: [H3](https://h3geo.org/) via h3-js.

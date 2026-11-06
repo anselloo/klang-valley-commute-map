@@ -3,15 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f5f2eb" />
     <link rel="icon" href="data:," />
     <link rel="preload" href="./data/stations.json" as="fetch" crossorigin />
     <link rel="preload" href="./data/matrix.json" as="fetch" crossorigin />
     <title>Where can I live? Klang Valley commute map</title>
     <meta name="description" content="See which parts of the Klang Valley are within 30, 45 or 60 minutes by train of your office or campus, and watch the trains run." />
   </head>
-  <body>
+  <body data-mode="commute" data-basemap="map">
     <div id="map"></div>
-    <aside id="panel" aria-label="Controls">
+
+    <div id="basemap" class="seg glass" role="group" aria-label="Map type">
+      <span class="thumb" aria-hidden="true"></span>
+      <button type="button" data-basemap="map" class="on" aria-pressed="true">Map</button>
+      <button type="button" data-basemap="satellite" aria-pressed="false">Satellite</button>
+    </div>
+
+    <aside id="panel" class="glass" aria-label="Controls">
+      <button type="button" id="grabber" aria-label="Expand or collapse the panel"><span></span></button>
       <header id="panel-head">
         <div id="head-text">
           <h1>Where can I live?</h1>
@@ -20,12 +30,13 @@
           <p id="peek"></p>
         </div>
         <div id="head-buttons">
-          <button type="button" id="head-play" class="icon" aria-label="Pause trains" hidden>❚❚</button>
-          <button type="button" id="collapse" aria-expanded="true" aria-controls="panel-body">Hide</button>
+          <button type="button" id="head-play" class="round" aria-label="Pause trains" hidden></button>
+          <button type="button" id="collapse" class="pill" aria-expanded="true" aria-controls="panel-body">Hide</button>
         </div>
       </header>
 
-      <div id="modes" role="tablist" aria-label="View">
+      <div id="modes" class="seg" role="tablist" aria-label="View">
+        <span class="thumb" aria-hidden="true"></span>
         <button type="button" role="tab" data-mode="commute" class="on" aria-selected="true">Commute map</button>
         <button type="button" role="tab" data-mode="network" aria-selected="false">Train network</button>
       </div>
@@ -40,11 +51,14 @@
           <section>
             <h2><span class="n">1</span> Where do you work or study?</h2>
             <form id="search" autocomplete="off">
-              <input id="search-input" type="search" placeholder="Search a place or address" aria-label="Search for a place or address" />
-              <button type="submit">Search</button>
+              <label class="field">
+                <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <input id="search-input" type="search" placeholder="Search a place or address" aria-label="Search for a place or address" />
+              </label>
+              <button type="submit" class="pill tint">Search</button>
             </form>
             <div id="chips" aria-label="Quick picks"></div>
-            <button type="button" id="pick">Or pick a spot on the map</button>
+            <button type="button" id="pick" class="btn wide">Or pick a spot on the map</button>
           </section>
 
           <section>
@@ -81,8 +95,9 @@
             </div>
             <input id="net-slider" type="range" min="18000" max="90000" step="60" value="27000" aria-label="Time of day" />
             <div id="net-controls">
-              <button type="button" id="net-play" aria-label="Pause trains">❚❚ Pause</button>
-              <div id="net-speed" role="group" aria-label="Playback speed">
+              <button type="button" id="net-play" class="btn" aria-label="Pause trains"></button>
+              <div id="net-speed" class="seg" role="group" aria-label="Playback speed">
+                <span class="thumb" aria-hidden="true"></span>
                 <button type="button" data-speed="10">10×</button>
                 <button type="button" data-speed="60" class="on">60×</button>
                 <button type="button" data-speed="300">300×</button>
@@ -104,7 +119,6 @@
             <ul id="net-lines"></ul>
             <p class="small">Tap a line to focus on it, tap it again to show everything.</p>
           </section>
-
         </div>
 
         <p id="status" role="status"></p>

@@ -1,8 +1,10 @@
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import "@fontsource-variable/inter/wght.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { cellToBoundary } from "h3-js";
 import "./style.css";
+import { BasemapController, type Basemap } from "./basemap";
 import { breakdownHtml, escapeHtml } from "./breakdown";
 import { RouteFinder, type Graph } from "./graph";
 import { bandOf, buildHexes, compute, haversineKm, type Hex, type Result } from "./model";
@@ -12,7 +14,7 @@ import type { Station } from "./types";
 // Bundlers do not copy MapLibre's worker next to the main bundle, so serve it explicitly.
 maplibregl.setWorkerUrl(new URL(workerUrl, document.baseURI).href);
 
-const STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
+const STYLE_URL = "https://tiles.openfreemap.org/styles/bright";
 const KL_CENTER: [number, number] = [101.6869, 3.139];
 const BAND_COLORS = ["#0b5394", "#3d8fd1", "#9cc9ec", "#d4d4d4"];
 const BAND_LABELS = ["Under 30 min", "30–45 min", "45–60 min", "Over 60 min"];
@@ -65,6 +67,7 @@ function setCollapsed(collapsed: boolean) {
   collapseBtn.setAttribute("aria-expanded", String(!collapsed));
 }
 collapseBtn.addEventListener("click", () => setCollapsed(!panel.classList.contains("collapsed")));
+el("grabber").addEventListener("click", () => setCollapsed(!panel.classList.contains("collapsed")));
 
 const map = new maplibregl.Map({
   container: "map",
@@ -75,6 +78,7 @@ const map = new maplibregl.Map({
   attributionControl: { compact: true },
 });
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+const basemap = new BasemapController(map);
 
 // `?debug` exposes the map for automated browser checks.
 if (new URLSearchParams(location.search).has("debug")) (window as unknown as { __map: maplibregl.Map }).__map = map;
@@ -120,7 +124,7 @@ function addMapLayers(stations: Station[], hexes: Hex[]) {
         0, BAND_COLORS[0], 1, BAND_COLORS[1], 2, BAND_COLORS[2], 3, BAND_COLORS[3],
         "rgba(0,0,0,0)",
       ],
-      "fill-opacity": ["match", ["feature-state", "band"], 3, 0.35, 0.6],
+      "fill-opacity": ["match", ["feature-state", "band"], 3, 0.35, 0.62],
     },
   });
   map.addSource("stations", {
@@ -165,7 +169,41 @@ async function start() {
   const [stations] = await Promise.all([stationsPromise, mapLoaded]);
   const hexes = buildHexes(stations);
   const hexIndex = new Map(hexes.map((h, i) => [h.id, i]));
+  basemap.init();
   addMapLayers(stations, hexes);
+  if (isPhone()) {
+    // MapLibre opens its attribution by default; on a phone it would cover a third of the map.
+    const attribution = document.querySelector(".maplibregl-ctrl-attrib");
+    attribution?.removeAttribute("open");
+    attribution?.classList.remove("maplibregl-compact-show");
+  }
+
+  // Map / Satellite. Our overlays are drawn a little stronger over imagery.
+  basemap.onChange = (mode: Basemap) => {
+    document.body.dataset.basemap = mode;
+    document.querySelectorAll<HTMLButtonElement>("#basemap button").forEach((b) => {
+      const on = b.dataset.basemap === mode;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+    const sat = mode === "satellite";
+    map.setPaintProperty("hex-fill", "fill-opacity", ["match", ["feature-state", "band"], 3, sat ? 0.5 : 0.35, sat ? 0.74 : 0.62]);
+    try {
+      localStorage.setItem("basemap", mode);
+    } catch {
+      /* private mode: the choice just is not remembered */
+    }
+  };
+  document.querySelectorAll<HTMLButtonElement>("#basemap button").forEach((b) => {
+    b.addEventListener("click", () => basemap.set(b.dataset.basemap as Basemap));
+  });
+  let saved: string | null = null;
+  try {
+    saved = localStorage.getItem("basemap");
+  } catch {
+    /* ignore */
+  }
+  basemap.set(saved === "satellite" ? "satellite" : "map");
 
   let dest: Destination | null = null;
   let result: Result | null = null;

@@ -103,6 +103,10 @@ An animated view of the rail network on the same map, as a second tab next to th
 - Works on a phone: the bottom sheet keeps the tabs, clock, play button and a one-line summary of the selection visible when collapsed.
 - Not included: real-time positions, bus services, and exact timetables for Prasarana (its trains are generated from headways).
 
+## v2.1: base maps and design (built)
+- A Map / Satellite switch. Map is the OpenFreeMap Bright style with its saturated road colours softened so transit lines and travel-time shading stand out; Satellite is Esri World Imagery under the same place labels (recoloured white with a dark halo). Both are layers of one style, so switching never rebuilds the map or loses the destination, shading or trains. The choice is remembered.
+- A redesigned interface in an Apple-like style: frosted-glass panels, system colours with a blue tint, a type scale in the system font (Inter as the stand-in off Apple devices), iOS-style segmented controls with a sliding thumb, capsule buttons, grouped lists, colour-coded line badges, a bottom sheet with a grabber on phones, and automatic dark mode. Motion respects the reduced-motion setting.
+
 ## Later ideas (parking lot, don't build yet)
 - Add Rapid KL buses and MRT feeder buses
 - "Compare two destinations" mode for couples with different workplaces
