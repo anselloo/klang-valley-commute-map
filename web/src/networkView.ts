@@ -317,8 +317,10 @@ export class NetworkView {
       [point.x + pad, point.y + pad],
     ];
     // A train stopped at a station sits right on top of its dot, so there the station should win a
-    // close call. A moving train is a deliberate target: it only loses if a station is nearer the tap.
+    // close call. A moving train is a deliberate target (they also crawl out of stations, so they are
+    // often within a few pixels of a dot): it gets a small edge in close calls.
     const STOPPED_PENALTY_PX = 8;
+    const MOVING_BONUS_PX = 4;
     const distance = (f: maplibregl.MapGeoJSONFeature) => {
       const [lon, lat] = (f.geometry as unknown as { coordinates: [number, number] }).coordinates;
       const p = this.map.project([lon, lat]);
@@ -328,7 +330,7 @@ export class NetworkView {
       const feats = this.map.queryRenderedFeatures(box, { layers: [layer] });
       return feats.map((f) => ({ f, d: distance(f) + penalty(f) })).sort((x, y) => x.d - y.d)[0];
     };
-    const train = nearest("net-trains", (f) => (f.properties.stopped === 1 ? STOPPED_PENALTY_PX : 0));
+    const train = nearest("net-trains", (f) => (f.properties.stopped === 1 ? STOPPED_PENALTY_PX : -MOVING_BONUS_PX));
     const station = nearest("station-dots", () => 0);
     if (train && (!station || train.d < station.d)) {
       this.selectStation(null);
