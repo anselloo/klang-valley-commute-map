@@ -8,11 +8,10 @@ Live site: https://anselloo.github.io/klang-valley-commute-map/ (available once 
 
 ## What it does
 
-The site opens on a worked example (KL Sentral at 8:00 am) so you can see what it shows straight away. Then:
+The site opens on a worked example (KL Sentral) so you can see what it shows straight away. Then:
 
 1. **Choose where you work or study**: search a place, tap a quick pick (KL Sentral, KLCC, Bukit Bintang, Mid Valley, Subang Jaya, Sunway), or choose "pick a spot on the map". You can also drag the pin.
-2. **Choose when you arrive**: 8:00 am or 9:00 am on a weekday.
-3. **Read the map**: an H3 hex grid is shaded by total door-to-door travel time to your destination (under 30 min, 30–45, 45–60, over 60). Uncoloured areas have no station within a 1.5 km walk. Tap any coloured area for the trip: walk, wait, each ride with its line and stops, changes, and the final walk.
+2. **Read the map**: an H3 hex grid is shaded by total door-to-door travel time to your destination, for a weekday morning commute (under 30 min, 30–45, 45–60, over 60). Uncoloured areas have no station within a 1.5 km walk. Tap any coloured area for the trip: walk, wait, each ride with its line and stops, changes, and the final walk.
 
 Shading updates in a few milliseconds. On a phone the controls sit in a bottom sheet that collapses to a short strip, so the map stays in view.
 
@@ -25,7 +24,7 @@ A Python build step turns the official static GTFS feeds into small JSON files. 
 1. **Build** (`scripts/`): downloads the feeds, keeps weekday Klang Valley rail, merges stops within 150 m into one station, and runs a shortest-path search from every station. Cost per trip is in-vehicle time, plus half the line's average headway as the first wait, plus half the next line's headway and 5 minutes for each change. A hand-maintained list of out-of-system walking links (`data/transfers.json`) joins stations that are close but not connected in the feeds.
 2. **Browser** (`web/`): for a destination D, a station's time is the best of `matrix(S, T) + walk(T, D)` over stations T within 1.5 km of D. A hex's time is the best of `walk(H, S) + time(S)` over stations S within 1.5 km. Walking is straight-line distance × 1.3 ÷ 4.5 km/h.
 
-Two departure windows are built, one per arrival option: 6–8 am for "arrive 8:00" and 7–9 am for "arrive 9:00".
+Times are for weekday mornings, using trains that depart 7–9 am. There is no separate 8:00 / 9:00 option: building one for each showed the two differ by about a minute for a typical trip, which is not worth asking a first-time visitor to choose.
 
 ## Run it locally
 
@@ -35,7 +34,7 @@ Needs Python 3.9+ (standard library only) and Node 20+.
 # 1. Check the raw feeds (downloads to data/raw/, which is git-ignored)
 python scripts/gtfs_check.py
 
-# 2. Rebuild data/stations.json, matrix-*.json and graph-*.json (they are committed, so this is optional)
+# 2. Rebuild data/stations.json, matrix.json and graph.json (they are committed, so this is optional)
 python scripts/build_matrix.py          # add --refresh to re-download the feeds
 
 # 3. Run the site
@@ -50,7 +49,7 @@ npm run build && npm run preview        # production build
 
 ```
 scripts/     Python build step (gtfs_check.py, build_matrix.py)
-data/        generated stations.json, matrix-*.json, graph-*.json, and hand-made transfers.json
+data/        generated stations.json, matrix.json, graph.json, and hand-made transfers.json
 web/         Vite + TypeScript frontend (MapLibre GL JS, h3-js)
 docs/        README screenshot
 .github/     workflows: deploy to Pages, monthly data refresh

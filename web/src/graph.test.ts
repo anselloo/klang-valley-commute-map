@@ -5,9 +5,9 @@ import { RouteFinder, type Graph } from "./graph";
 const read = <T>(name: string): T =>
   JSON.parse(readFileSync(new URL(`../../data/${name}`, import.meta.url), "utf-8")) as T;
 
-describe.each(["0800", "0900"])("route finder matches the Python matrix (%s)", (label) => {
-  const matrix = read<(number | null)[][]>(`matrix-${label}.json`);
-  const finder = new RouteFinder(read<Graph>(`graph-${label}.json`), matrix.length);
+describe("route finder matches the Python matrix", () => {
+  const matrix = read<(number | null)[][]>("matrix.json");
+  const finder = new RouteFinder(read<Graph>("graph.json"), matrix.length);
 
   it("reproduces the matrix for a sample of pairs", () => {
     const n = matrix.length;

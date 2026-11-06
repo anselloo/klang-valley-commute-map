@@ -3,15 +3,13 @@
 
 Reads the cached GTFS feeds (see gtfs_check.py), and writes
   data/stations.json         - id, name, lat, lon, lines
-  data/matrix-<window>.json  - minutes between every pair of stations (null = unreachable)
-  data/graph-<window>.json   - compact line graph, so the browser can rebuild the route
+  data/matrix.json           - minutes between every pair of stations (null = unreachable)
+  data/graph.json            - compact line graph, so the browser can rebuild the route
                                for a single trip (used for the breakdown popup)
 
-Two departure windows are built, one per arrival-time option in the UI:
-  0800  depart 6:00-8:00 (arrive around 8:00)
-  0900  depart 7:00-9:00 (arrive around 9:00)
+Everything is built for a weekday morning, departing 7:00-9:00.
 
-Cost model for a departure window:
+Cost model:
   * in-vehicle time from stop_times
   * initial wait   = half the average headway of the line in the window
   * transfer       = half the headway of the next line + 5 min penalty
@@ -35,8 +33,8 @@ import gtfs_check as g
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 
-# Departure windows in minutes after midnight, keyed by the arrival time they serve.
-WINDOWS = {"0800": (6 * 60, 8 * 60), "0900": (7 * 60, 9 * 60)}
+# Weekday-morning departure window, in minutes after midnight.
+WINDOW = (7 * 60, 9 * 60)
 FALLBACK_PAD = 60  # stops with no departure in the window use the window padded by this much
 TRANSFER_PENALTY = 5.0
 
@@ -168,18 +166,14 @@ def main():
         g.download(url, dest, args.refresh)
 
     route_names, stop_rows = {}, {}
-    per_window = {}  # label -> (edges, headway)
-    for label, window in WINDOWS.items():
-        edges, headway = {}, {}
-        for feed, filt in (("prasarana", g.prasarana_filter), ("ktmb", g.ktmb_filter)):
-            with zipfile.ZipFile(g.FEEDS[feed][1]) as zf:
-                n, e, h, s = line_data(feed, zf, filt, window)
-            route_names.update(n)
-            edges.update(e)
-            headway.update(h)
-            stop_rows.update(s)
-        per_window[label] = (edges, headway)
-    edges = per_window["0800"][0]  # same stop set in every window
+    edges, headway = {}, {}
+    for feed, filt in (("prasarana", g.prasarana_filter), ("ktmb", g.ktmb_filter)):
+        with zipfile.ZipFile(g.FEEDS[feed][1]) as zf:
+            n, e, h, s = line_data(feed, zf, filt, WINDOW)
+        route_names.update(n)
+        edges.update(e)
+        headway.update(h)
+        stop_rows.update(s)
 
     # Keep only Klang Valley stops that appear on a line edge.
     used = {s for pairs in edges.values() for pair in pairs for s in pair}
@@ -300,28 +294,20 @@ def main():
     DATA_DIR.mkdir(exist_ok=True)
     (DATA_DIR / "stations.json").write_text(
         json.dumps(stations, ensure_ascii=False, indent=0), encoding="utf-8")
-    for stale in ("matrix.json",):
-        (DATA_DIR / stale).unlink(missing_ok=True)
 
-    matrices = {}
-    for label, (w_edges, w_headway) in per_window.items():
-        matrix, graph = solve(w_edges, w_headway)
-        matrices[label] = matrix
-        (DATA_DIR / f"matrix-{label}.json").write_text(
-            json.dumps(matrix, separators=(",", ":")), encoding="utf-8")
-        (DATA_DIR / f"graph-{label}.json").write_text(
-            json.dumps(graph, separators=(",", ":")), encoding="utf-8")
-        unreachable = sum(1 for r in matrix for v in r if v is None)
-        size = ((DATA_DIR / f"matrix-{label}.json").stat().st_size
-                + (DATA_DIR / f"graph-{label}.json").stat().st_size) // 1024
-        print(f"[{label}] {n} stations, {n * n - n} ordered pairs, {unreachable} unreachable, {size} KB")
-        if unreachable:
-            comp = defaultdict(list)
-            for i, row in enumerate(matrix):
-                comp[tuple(j for j, v in enumerate(row) if v is not None)].append(stations[i]["name"])
-            for reach, names in sorted(comp.items(), key=lambda kv: len(kv[0])):
-                if len(reach) < n - 1:
-                    print(f"  isolated group reaching {len(reach)} stations: {', '.join(names[:8])}")
+    matrix, graph = solve(edges, headway)
+    (DATA_DIR / "matrix.json").write_text(json.dumps(matrix, separators=(",", ":")), encoding="utf-8")
+    (DATA_DIR / "graph.json").write_text(json.dumps(graph, separators=(",", ":")), encoding="utf-8")
+    unreachable = sum(1 for r in matrix for v in r if v is None)
+    size = ((DATA_DIR / "matrix.json").stat().st_size + (DATA_DIR / "graph.json").stat().st_size) // 1024
+    print(f"{n} stations, {n * n - n} ordered pairs, {unreachable} unreachable, {size} KB")
+    if unreachable:
+        comp = defaultdict(list)
+        for i, row in enumerate(matrix):
+            comp[tuple(j for j, v in enumerate(row) if v is not None)].append(stations[i]["name"])
+        for reach, names in sorted(comp.items(), key=lambda kv: len(kv[0])):
+            if len(reach) < n - 1:
+                print(f"  isolated group reaching {len(reach)} stations: {', '.join(names[:8])}")
 
     checks = [
         ("Kl Sentral", "Klcc"), ("Kl Sentral", "Kajang"), ("Klcc", "Bukit Bintang"),
@@ -335,15 +321,13 @@ def main():
         return [i for i, s in enumerate(stations) if s["name"].lower() == name.lower()]
 
     print("\nSpot-check candidates (minutes from station to station incl. waits;")
-    print("min over same-named stations; arrive 8:00 / arrive 9:00):")
+    print("min over same-named stations):")
     for a, b in checks:
         ia, ib = by_name(a), by_name(b)
         if not ia or not ib:
             print(f"  {a} -> {b}: station name not found")
             continue
-        vals = [min(m[i][j] for i in ia for j in ib if m[i][j] is not None)
-                for m in matrices.values()]
-        print(f"  {a} -> {b}: {vals[0]} / {vals[1]}")
+        print(f"  {a} -> {b}: {min(matrix[i][j] for i in ia for j in ib if matrix[i][j] is not None)}")
 
 
 if __name__ == "__main__":

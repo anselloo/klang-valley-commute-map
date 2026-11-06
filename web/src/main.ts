@@ -26,7 +26,6 @@ const QUICK_PICKS = [
 ];
 
 type Matrix = (number | null)[][];
-type WindowId = "0800" | "0900";
 interface Destination {
   lng: number;
   lat: number;
@@ -47,7 +46,7 @@ const summaryEl = el("summary");
 const peekEl = el("peek");
 const isPhone = () => window.matchMedia("(max-width: 600px)").matches;
 const PEEK_EXAMPLE = "Example destination. Tap Options to choose your own.";
-const PEEK_TIP = "Tap a coloured area to see the trip. Tap Options to change destination or time.";
+const PEEK_TIP = "Tap a coloured area to see the trip. Tap Options to change the destination.";
 
 el("legend").innerHTML = BAND_LABELS.map(
   (label, i) => `<li><span class="swatch" style="background:${BAND_COLORS[i]}"></span>${label}</li>`,
@@ -86,21 +85,13 @@ new ResizeObserver(() => {
 const stationsPromise = loadJson<Station[]>("stations.json");
 const mapLoaded = new Promise<void>((resolve) => map.on("load", () => resolve()));
 
-// Each arrival-time option has its own matrix (loaded up front for 8:00, on demand for 9:00)
-// and route graph (loaded the first time a breakdown is requested).
-const matrixCache = new Map<WindowId, Promise<Matrix>>();
-const finderCache = new Map<WindowId, Promise<RouteFinder>>();
-const getMatrix = (w: WindowId) => {
-  if (!matrixCache.has(w)) matrixCache.set(w, loadJson<Matrix>(`matrix-${w}.json`));
-  return matrixCache.get(w)!;
+// The matrix loads up front; the route graph loads the first time a breakdown is requested.
+const matrixPromise = loadJson<Matrix>("matrix.json");
+let finderPromise: Promise<RouteFinder> | null = null;
+const getFinder = (stationCount: number) => {
+  finderPromise ??= loadJson<Graph>("graph.json").then((g) => new RouteFinder(g, stationCount));
+  return finderPromise;
 };
-const getFinder = (w: WindowId, stationCount: number) => {
-  if (!finderCache.has(w)) {
-    finderCache.set(w, loadJson<Graph>(`graph-${w}.json`).then((g) => new RouteFinder(g, stationCount)));
-  }
-  return finderCache.get(w)!;
-};
-getMatrix("0800");
 
 function hexFeatures(hexes: Hex[]) {
   return {
@@ -172,7 +163,6 @@ async function start() {
   const hexIndex = new Map(hexes.map((h, i) => [h.id, i]));
   addMapLayers(stations, hexes);
 
-  let arrival: WindowId = "0800";
   let dest: Destination | null = null;
   let result: Result | null = null;
   let picking = false;
@@ -184,8 +174,6 @@ async function start() {
   marker.getElement().appendChild(pinLabel);
   marker.getElement().title = "Your destination. Drag to move it.";
   const breakdownPopup = new maplibregl.Popup({ closeButton: true, maxWidth: "340px", offset: 8 });
-
-  const arrivalText = () => (arrival === "0800" ? "8:00 am" : "9:00 am");
 
   function nearestLabel(lng: number, lat: number): string {
     let best = 0;
@@ -211,7 +199,7 @@ async function start() {
   async function update() {
     if (!dest) return;
     breakdownPopup.remove();
-    const matrix = await getMatrix(arrival);
+    const matrix = await matrixPromise;
     const started = performance.now();
     result = compute(stations, matrix, hexes, dest.lat, dest.lng);
     hexes.forEach((hex, i) => {
@@ -219,7 +207,7 @@ async function start() {
     });
     console.debug(`recomputed in ${(performance.now() - started).toFixed(1)} ms`);
     marker.setLngLat([dest.lng, dest.lat]).addTo(map);
-    summaryEl.textContent = `Train time to ${dest.label}, arriving ${arrivalText()}`;
+    summaryEl.textContent = `Train time to ${dest.label}, weekday morning`;
     el("legend-title").textContent = `Time from each area to ${dest.label}:`;
     document.querySelectorAll<HTMLButtonElement>("#chips button").forEach((b) => {
       b.classList.toggle("on", b.dataset.chip === dest!.chip);
@@ -248,7 +236,7 @@ async function start() {
     const alight = result.alightAt[board];
     const walkIn = hexes[hexIdx].near.find((n) => n.station === board)!.walk;
     const walkOut = result.destStations.find((d) => d.station === alight)!.walk;
-    const route = (await getFinder(arrival, stations.length)).route(board, alight);
+    const route = (await getFinder(stations.length)).route(board, alight);
     if (!route) return;
     const html = breakdownHtml({
       walkToStation: { name: stations[board].name, minutes: walkIn },
@@ -261,7 +249,7 @@ async function start() {
       .setLngLat(at)
       .setHTML(
         `<strong>${Math.round(time)} min from here to ${escapeHtml(dest.label)}</strong>${html}` +
-          `<div class="popup-note">Weekday, arriving about ${arrivalText()}. Walks are straight-line estimates; waits are half the average gap between trains.</div>` +
+          `<div class="popup-note">Weekday morning (trains departing 7–9 am). Walks are straight-line estimates; waits are half the average gap between trains.</div>` +
           `<div class="popup-actions"><button type="button" id="set-dest">Use this spot as my destination</button></div>`,
       )
       .addTo(map);
@@ -310,19 +298,6 @@ async function start() {
     });
     chips.appendChild(btn);
   }
-
-  // Arrival-time toggle.
-  document.querySelectorAll<HTMLButtonElement>("#arrival button").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      arrival = btn.dataset.window as WindowId;
-      document.querySelectorAll<HTMLButtonElement>("#arrival button").forEach((b) => {
-        const on = b === btn;
-        b.classList.toggle("on", on);
-        b.setAttribute("aria-pressed", String(on));
-      });
-      await update();
-    });
-  });
 
   // Destination search (Nominatim, one request per submit).
   el<HTMLFormElement>("search").addEventListener("submit", async (ev) => {

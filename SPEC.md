@@ -8,10 +8,10 @@ People choosing where to rent or buy who want to rely on public transport. For v
 
 ## What v1 does
 1. Shows a map of the Klang Valley.
-2. The user picks a destination: their office or campus. They can search, tap a quick pick, choose "pick a spot on the map", or drag the pin. The site opens on a worked example (KL Sentral at 8:00am) so the first screen already shows the result.
+2. The user picks a destination: their office or campus. They can search, tap a quick pick, choose "pick a spot on the map", or drag the pin. The site opens on a worked example (KL Sentral) so the first screen already shows the result.
 3. The map shades the area by total door-to-door travel time to that destination, in bands: under 30 min, 30–45, 45–60, over 60 / unreachable.
 4. Clicking any shaded area shows a short breakdown: walk to station, wait, ride (with lines and transfers), walk to destination.
-5. A toggle to switch the arrival time between 8:00am and 9:00am on a weekday.
+5. ~~A toggle to switch the arrival time between 8:00am and 9:00am on a weekday.~~ Dropped: with a 6–8am and a 7–9am window the two options differed by about a minute for a typical trip (62% of pairs within 1 min), and mostly reflected gaps in the KTM feed. It added a decision a first-time visitor cannot judge, so v1 uses a single weekday-morning window.
 6. A short numbered guide in a side panel (a bottom sheet on phones) explains the steps and the legend, so a first-time visitor knows what to do.
 
 ## Explicitly NOT in v1
@@ -36,12 +36,12 @@ Geocoding for the search box (optional in v1): Nominatim, with light usage and a
 ### Build step (Python, runs offline / in GitHub Actions)
 1. Download both GTFS ZIPs.
 2. Keep only weekday service and only Klang Valley rail routes.
-3. For each arrival option, compute the shortest station-to-station travel time for every pair of stations, using a two-hour departure window ending at the arrival time (6:00–8:00am for "arrive 8:00", 7:00–9:00am for "arrive 9:00"). One-hour windows left some KTM stops with no trains, because the feed has real gaps. Stops with no departure in the window use the window padded by an hour. Include:
+3. For a departure window of 7:00–9:00am, compute the shortest station-to-station travel time for every pair of stations. (A one-hour window left some KTM stops with no trains, because the feed has real gaps; stops with no departure in the window use the window padded by an hour.) Include:
    - in-vehicle time from stop_times
    - initial wait = half the average headway on that route in the window
    - transfer penalty = 5 min per change (walking between platforms plus waiting)
    - known out-of-system transfers between nearby stations (e.g. a short walk between two lines' stations), as a hand-maintained list
-4. Output `stations.json` (id, name, lat, lon, lines), a `matrix-<window>.json` per arrival option (station-to-station minutes), and a `graph-<window>.json` per option (a compact line graph the browser uses to rebuild the route for the breakdown popup). All small enough to ship to the browser.
+4. Output `stations.json` (id, name, lat, lon, lines), `matrix.json` (station-to-station minutes) and `graph.json` (a compact line graph the browser uses to rebuild the route for the breakdown popup). All small enough to ship to the browser.
 
 ### In the browser (no backend)
 1. User picks destination point D.
@@ -61,7 +61,7 @@ Walking time = straight-line distance × 1.3 (detour factor) ÷ 4.5 km/h. Simple
 ## Repo layout
 ```
 /scripts      Python build step (download, filter, compute matrix)
-/data         generated stations.json, matrix-*.json, graph-*.json (committed),
+/data         generated stations.json, matrix.json, graph.json (committed),
               plus the hand-maintained transfers.json
 /web          Vite frontend
 /docs         README screenshot
@@ -77,7 +77,7 @@ Status as of 2026-11-06: all six are built and pushed. Two items are still open 
 2. **Matrix.** Compute and save station-to-station times. Spot-check 5 trips against Google Maps or MyRapid PULSE; within ~5 min is fine. *Built; the spot-check against Google Maps / PULSE is still open, and the walk times in `data/transfers.json` are estimates.*
 3. **Map.** Base map plus station dots, nothing else. *Done.*
 4. **Isochrone.** Click a point, hexes colour by travel time. *Done.*
-5. **Breakdown popup and arrival-time toggle.** *Done, plus search, quick picks and a first-visit guide.*
+5. **Breakdown popup and arrival-time toggle.** *Breakdown popup done, plus search, quick picks and a first-visit guide. The arrival-time toggle was built and then removed (see "What v1 does").*
 6. **Ship.** Deploy to GitHub Pages, write the README with a screenshot. *Workflows and README are done; GitHub Pages still has to be switched on (Settings → Pages → Source: GitHub Actions).*
 
 ## Done when

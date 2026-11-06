@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link rel="icon" href="data:," />
     <link rel="preload" href="./data/stations.json" as="fetch" crossorigin />
-    <link rel="preload" href="./data/matrix-0800.json" as="fetch" crossorigin />
+    <link rel="preload" href="./data/matrix.json" as="fetch" crossorigin />
     <title>Where can I live? Klang Valley commute map</title>
     <meta name="description" content="See which parts of the Klang Valley are within 30, 45 or 60 minutes by train of your office or campus." />
   </head>
@@ -25,7 +25,7 @@
       <div id="panel-body">
         <p id="lede">
           Pick where you work or study. The map colours every area by how long the train
-          journey to it takes, door to door.
+          journey to it takes on a weekday morning, door to door.
         </p>
 
         <section>
@@ -39,16 +39,7 @@
         </section>
 
         <section>
-          <h2><span class="n">2</span> When do you need to arrive?</h2>
-          <div id="arrival" role="group" aria-label="Arrival time on a weekday">
-            <button type="button" data-window="0800" class="on" aria-pressed="true">8:00 am</button>
-            <button type="button" data-window="0900" aria-pressed="false">9:00 am</button>
-          </div>
-          <p class="small">Weekday mornings. Trains are a little less frequent before 7 am.</p>
-        </section>
-
-        <section>
-          <h2><span class="n">3</span> Read the map</h2>
+          <h2><span class="n">2</span> Read the map</h2>
           <p class="small" id="legend-title">Time from each area to your destination:</p>
           <ul id="legend"></ul>
           <p class="small">
