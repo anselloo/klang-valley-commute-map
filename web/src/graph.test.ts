@@ -7,7 +7,7 @@ const read = <T>(name: string): T =>
 
 describe("route finder matches the Python matrix", () => {
   const matrix = read<(number | null)[][]>("matrix.json");
-  const finder = new RouteFinder(read<Graph>("graph.json"), matrix.length);
+  const finder = new RouteFinder(read<Graph>("graph.json"), matrix.length, false);
 
   it("reproduces the matrix for a sample of pairs", () => {
     const n = matrix.length;
@@ -30,5 +30,29 @@ describe("route finder matches the Python matrix", () => {
 
   it("same station is zero minutes with no segments", () => {
     expect(finder.route(5, 5)).toEqual({ total: 0, segments: [] });
+  });
+});
+
+describe("bus journeys between stations", () => {
+  const matrix = read<(number | null)[][]>("matrix-bus.json");
+  const graph = read<Graph>("graph.json");
+  const finder = new RouteFinder(graph, matrix.length, true);
+
+  it("are in the graph, and the route finder uses them where the matrix does", () => {
+    expect((graph.buses ?? []).length).toBeGreaterThan(100);
+    let withBus = 0;
+    for (const [a, b] of (graph.buses ?? []).slice(0, 80)) {
+      const r = finder.route(a, b);
+      expect(r).not.toBeNull();
+      expect(Math.abs(r!.total - matrix[a][b]!)).toBeLessThan(0.5);
+      if (r!.segments.some((s) => s.kind === "bus")) withBus++;
+    }
+    expect(withBus).toBeGreaterThan(5);
+  });
+
+  it("name the bus routes in the segment", () => {
+    const [a, b] = graph.buses![0];
+    const seg = finder.route(a, b)!.segments.find((s) => s.kind === "bus");
+    if (seg && seg.kind === "bus") expect(seg.routes.length).toBeGreaterThan(0);
   });
 });

@@ -58,7 +58,7 @@ def main():
     if any(v is not None and not 0 < v < 240 for r in matrix for v in r if v != 0):
         problems.append("matrix has travel times outside 0-240 minutes")
 
-    for name in ("matrix-pm.json", "matrix-sat.json", "matrix-sun.json"):
+    for name in ("matrix-pm.json", "matrix-sat.json", "matrix-sun.json", "matrix-bus.json", "matrix-pm-bus.json", "matrix-sat-bus.json", "matrix-sun-bus.json"):
         extra = load(name)
         if len(extra) != n or any(len(r) != n for r in extra):
             problems.append(f"{name} is not stations x stations")

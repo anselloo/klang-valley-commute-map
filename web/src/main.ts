@@ -136,22 +136,25 @@ const WHEN: Record<When, { suffix: string; label: string; hours: string }> = {
   sat: { suffix: "-sat", label: "Saturday", hours: "Saturday (trains departing 10 am–12 pm)" },
   sun: { suffix: "-sun", label: "Sunday", hours: "Sunday (trains departing 10 am–12 pm)" },
 };
-const matrices = new Map<When, Promise<Matrix>>([["am", loadJson<Matrix>("matrix.json")]]);
-const getMatrix = (when: When) => {
-  if (!matrices.has(when)) matrices.set(when, loadJson<Matrix>(`matrix${WHEN[when].suffix}.json`));
-  return matrices.get(when)!;
+// With the Bus choice the trains are joined by bus links between stations (matrix-*-bus.json).
+const matrices = new Map<string, Promise<Matrix>>([["am", loadJson<Matrix>("matrix.json")]]);
+const getMatrix = (when: When, buses: boolean) => {
+  const key = buses ? `${when}-bus` : when;
+  if (!matrices.has(key)) matrices.set(key, loadJson<Matrix>(`matrix${WHEN[when].suffix}${buses ? "-bus" : ""}.json`));
+  return matrices.get(key)!;
 };
 const feeders = new Map<When, Promise<FeederStop[]>>();
 const getFeeder = (when: When) => {
   if (!feeders.has(when)) feeders.set(when, loadJson<FeederStop[]>(`feeder${WHEN[when].suffix}.json`));
   return feeders.get(when)!;
 };
-const finders = new Map<When, Promise<RouteFinder>>();
-const getFinder = (when: When, stationCount: number) => {
-  if (!finders.has(when)) {
-    finders.set(when, loadJson<Graph>(`graph${WHEN[when].suffix}.json`).then((g) => new RouteFinder(g, stationCount)));
+const finders = new Map<string, Promise<RouteFinder>>();
+const getFinder = (when: When, buses: boolean, stationCount: number) => {
+  const key = buses ? `${when}-bus` : when;
+  if (!finders.has(key)) {
+    finders.set(key, loadJson<Graph>(`graph${WHEN[when].suffix}.json`).then((g) => new RouteFinder(g, stationCount, buses)));
   }
-  return finders.get(when)!;
+  return finders.get(key)!;
 };
 
 function hexFeatures(hexes: Hex[]) {
@@ -447,7 +450,7 @@ async function start() {
   async function update() {
     if (!dests.some(Boolean)) return;
     breakdownPopup.remove();
-    const matrix = await getMatrix(when);
+    const matrix = await getMatrix(when, access.id === "bus");
     const started = performance.now();
     dests.forEach((d, i) => {
       results[i] = d ? compute(stations, matrix, hexes, d.lat, d.lng, access, reverse, feeder) : null;
@@ -524,7 +527,7 @@ async function start() {
     };
     const hexVia = busWords(reverse ? (hexLeg.viaBack ?? hexLeg.via) : hexLeg.via, !reverse);
     const destVia = busWords(destLeg.via, reverse);
-    const finder = await getFinder(when, stations.length);
+    const finder = await getFinder(when, access.id === "bus", stations.length);
     const route = reverse ? finder.route(alight, board) : finder.route(board, alight);
     if (!route) return null;
     const html = breakdownHtml({

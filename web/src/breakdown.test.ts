@@ -53,3 +53,16 @@ describe("breakdownHtml with a feeder bus", () => {
     expect(html).toContain("Bus T200, then walk to KLCC");
   });
 });
+
+describe("breakdownHtml with a bus between stations", () => {
+  it("names the buses and the stations", () => {
+    const html = breakdownHtml({
+      walkToStation: { name: "Serdang", minutes: 6 },
+      route: { total: 30, segments: [{ kind: "bus", routes: "590 > T453", from: 0, to: 1, minutes: 30 }] },
+      stationName: (i) => ["Serdang", "Bukit Dukung"][i],
+      walkToDestination: { name: "work", minutes: 4 },
+      total: 40,
+    });
+    expect(html).toContain("Buses 590, then T453: Serdang → Bukit Dukung");
+  });
+});

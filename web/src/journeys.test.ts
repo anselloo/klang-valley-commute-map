@@ -283,3 +283,28 @@ describe("bus changes", () => {
     }
   });
 });
+
+describe("the matrices that include bus links between stations", () => {
+  const bus = JSON.parse(readFileSync(new URL("../../data/matrix-bus.json", import.meta.url), "utf-8")) as (number | null)[][];
+
+  it("are never slower than the rail-only matrix, and are faster somewhere", () => {
+    let faster = 0;
+    for (let i = 0; i < stations.length; i++) {
+      for (let j = 0; j < stations.length; j++) {
+        const rail = matrix[i][j];
+        const b = bus[i][j];
+        if (rail === null || b === null) continue;
+        expect(b).toBeLessThanOrEqual(rail + 1e-9);
+        if (b < rail - 3) faster++;
+      }
+    }
+    expect(faster).toBeGreaterThan(50);
+  });
+
+  it("make Ampang to KLCC quick by bus 300", () => {
+    const i = idsOf("Ampang")[0];
+    const j = idsOf("KLCC")[0];
+    expect(bus[i][j]!).toBeLessThan(25);
+    expect(matrix[i][j]!).toBeGreaterThan(25);
+  });
+});

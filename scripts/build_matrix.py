@@ -46,6 +46,8 @@ PERIODS = [
 ]
 FALLBACK_PAD = 60  # stops with no departure in the window use the window padded by this much
 TRANSFER_PENALTY = 5.0
+# A bus journey between two stations is only used if it saves at least this much over the best rail-only trip.
+BUS_SAVING_MIN = 3.0
 # Infrequent services (some KTM stops have a single train in the window) would otherwise imply
 # waits of an hour or more. Riders of those check the timetable, so cap the average gap used for
 # waiting at 40 minutes, i.e. a 20 minute wait at most.
@@ -278,8 +280,12 @@ def main():
     station_of = {s: index[c] for s, c in cluster_of.items()}
     n = len(stations)
 
-    def solve(edges, headway):
-        """Build the graph for one window; return (matrix, graph export)."""
+    def solve(edges, headway, buses=()):
+        """Build the graph for one window; return (matrix, graph export).
+
+        `buses` are directed bus journeys between stations, (from, to, minutes, routes): like a walking
+        transfer but one way and named, usable from an arrival by train or from the origin.
+        """
         # Graph. Nodes: ("T", st) arrived by train, ("W", st) arrived on foot,
         # ("L", rkey, dir, stop) on a vehicle.
         ride = defaultdict(list)    # line node -> [(line node, minutes)]
@@ -304,11 +310,17 @@ def main():
                 walk[a].append((b, t["walk_min"]))
                 walk[b].append((a, t["walk_min"]))
 
+        bus = defaultdict(list)
+        for a, b, minutes, _ in buses:
+            bus[a].append((b, minutes))
+
         def dijkstra(src):
             dist = {}
             heap = [(0.0, ("W", src))]
             # Walking transfers out of the origin cost walk time, with no extra penalty.
             for other, w in walk[src]:
+                heap.append((float(w), ("W", other)))
+            for other, w in bus[src]:
                 heap.append((float(w), ("W", other)))
             heapq.heapify(heap)
             while heap:
@@ -324,6 +336,8 @@ def main():
                         heapq.heappush(heap, (d + hw / 2 + extra, ln))
                     if kind == "T":
                         for other, w in walk[st]:
+                            heapq.heappush(heap, (d + w, ("W", other)))
+                        for other, w in bus[st]:
                             heapq.heappush(heap, (d + w, ("W", other)))
                 else:
                     for nxt, dur in ride[node]:
@@ -357,14 +371,35 @@ def main():
             "rides": [[node_id[a], node_id[b], round(dur, 2)]
                       for a, outs in sorted(ride.items()) for b, dur in outs],
             "walks": sorted({(min(a, b), max(a, b), w) for a, ws in walk.items() for b, w in ws}),
+            "buses": [[a, b, m, routes] for a, b, m, routes in sorted(buses)],
         }
         return matrix, graph
+
+    def solve_with_buses(edges, headway, window, days):
+        """Rail only first, then again with the bus journeys that save at least BUS_SAVING_MIN over it."""
+        import build_feeder as bf  # imported here: build_feeder imports this module
+
+        matrix, graph = solve(edges, headway)
+        keep = [(a, b, m, routes) for a, b, m, routes in bf.station_bus_edges(stations, window, days)
+                if matrix[a][b] is None or m < matrix[a][b] - BUS_SAVING_MIN]
+        if not keep:
+            return matrix, matrix, graph, 0
+        # The rail-only matrix is what Walk and Bike / e-hail use; the one with bus links is for the
+        # Bus choice. The graph carries the bus links, and the browser leaves them out for rail-only.
+        bus_matrix, bus_graph = solve(edges, headway, keep)
+        return matrix, bus_matrix, bus_graph, len(keep)
 
     DATA_DIR.mkdir(exist_ok=True)
     (DATA_DIR / "stations.json").write_text(
         json.dumps(stations, ensure_ascii=False, indent=0), encoding="utf-8")
 
-    matrix, graph = solve(edges, headway)
+    import build_feeder as bf
+
+    for _, url, path in bf.FEEDS:
+        g.download(url, path, args.refresh)
+    matrix, bus_matrix, graph, kept = solve_with_buses(edges, headway, WINDOW, g.WEEKDAYS)
+    print(f"am: {kept} bus journeys beat the trains")
+    (DATA_DIR / "matrix-bus.json").write_text(json.dumps(bus_matrix, separators=(",", ":")), encoding="utf-8")
     (DATA_DIR / "matrix.json").write_text(json.dumps(matrix, separators=(",", ":")), encoding="utf-8")
     (DATA_DIR / "graph.json").write_text(json.dumps(graph, separators=(",", ":")), encoding="utf-8")
     # The same stations at other times: weekday evening and Saturday, each with its own waits.
@@ -376,7 +411,9 @@ def main():
             e2.update(e)
             h2.update(h)
         add_erl({}, e2, h2, dict(stop_rows), name)
-        m2, g2 = solve(e2, h2)
+        m2, b2, g2, kept = solve_with_buses(e2, h2, window, days)
+        print(f"{name}: {kept} bus journeys beat the trains")
+        (DATA_DIR / f"matrix{suffix}-bus.json").write_text(json.dumps(b2, separators=(",", ":")), encoding="utf-8")
         (DATA_DIR / f"matrix{suffix}.json").write_text(json.dumps(m2, separators=(",", ":")), encoding="utf-8")
         (DATA_DIR / f"graph{suffix}.json").write_text(json.dumps(g2, separators=(",", ":")), encoding="utf-8")
         gaps = sum(1 for r in m2 for v in r if v is None)

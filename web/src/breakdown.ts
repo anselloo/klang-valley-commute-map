@@ -30,6 +30,12 @@ export function breakdownHtml(input: BreakdownInput): string {
         `Ride ${escapeHtml(seg.line)}: ${escapeHtml(input.stationName(seg.from))} → ${escapeHtml(input.stationName(seg.to))} (${stops})`,
         mins(seg.minutes),
       ]);
+    } else if (seg.kind === "bus") {
+      const buses = seg.routes.includes(" > ") ? `Buses ${seg.routes.replaceAll(" > ", ", then ")}` : `Bus ${seg.routes}`;
+      rows.push([
+        `${escapeHtml(buses)}: ${escapeHtml(input.stationName(seg.from))} → ${escapeHtml(input.stationName(seg.to))}`,
+        mins(seg.minutes),
+      ]);
     } else if (seg.onFoot) {
       rows.push([
         `Walk between stations: ${escapeHtml(input.stationName(seg.station))} → ${escapeHtml(input.stationName(seg.to))}`,

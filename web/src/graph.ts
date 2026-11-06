@@ -14,12 +14,15 @@ export interface Graph {
   rides: [number, number, number][];
   /** [station a, station b, minutes], undirected */
   walks: [number, number, number][];
+  /** Bus journeys between stations, one way: [from, to, minutes, routes]; routes are joined with " > " for a change. */
+  buses?: [number, number, number, string][];
 }
 
 export type Segment =
   | { kind: "wait"; line: string; station: number; minutes: number }
   | { kind: "ride"; line: string; from: number; to: number; stops: number; minutes: number }
-  | { kind: "transfer"; station: number; to: number; minutes: number; onFoot: boolean };
+  | { kind: "transfer"; station: number; to: number; minutes: number; onFoot: boolean }
+  | { kind: "bus"; routes: string; from: number; to: number; minutes: number };
 
 export interface Route {
   total: number;
@@ -29,6 +32,7 @@ export interface Route {
 interface Edge {
   to: number;
   cost: number;
+  routes?: string;
 }
 
 class MinHeap {
@@ -77,16 +81,20 @@ export class RouteFinder {
   private readonly boardEdges: Edge[][];
   private readonly rideEdges: Edge[][];
   private readonly walkEdges: Edge[][];
+  private readonly busEdges: Edge[][];
   private readonly stateCount: number;
 
   constructor(
     private readonly graph: Graph,
     stationCount: number,
+    /** Use the bus links between stations. Off for the rail-only matrices. */
+    useBuses = true,
   ) {
     this.n = stationCount;
     this.stateCount = 2 * stationCount + graph.nodes.length;
     this.boardEdges = Array.from({ length: stationCount }, () => []);
     this.walkEdges = Array.from({ length: stationCount }, () => []);
+    this.busEdges = Array.from({ length: stationCount }, () => []);
     this.rideEdges = Array.from({ length: graph.nodes.length }, () => []);
     graph.nodes.forEach(([station, , headway], i) => {
       if (headway > 0) this.boardEdges[station].push({ to: i, cost: headway / 2 });
@@ -96,6 +104,7 @@ export class RouteFinder {
       this.walkEdges[a].push({ to: b, cost: w });
       this.walkEdges[b].push({ to: a, cost: w });
     }
+    if (useBuses) for (const [a, b, m, routes] of graph.buses ?? []) this.busEdges[a].push({ to: b, cost: m, routes });
   }
 
   private trainState(station: number) {
@@ -123,6 +132,7 @@ export class RouteFinder {
     };
     relax(this.footState(src), 0, -1);
     for (const e of this.walkEdges[src]) relax(this.footState(e.to), e.cost, this.footState(src));
+    for (const e of this.busEdges[src]) relax(this.footState(e.to), e.cost, this.footState(src));
 
     const done = new Uint8Array(this.stateCount);
     while (heap.size) {
@@ -136,6 +146,7 @@ export class RouteFinder {
         for (const e of this.boardEdges[st]) relax(this.lineState(e.to), d + e.cost + extra, state);
         if (onTrain) {
           for (const e of this.walkEdges[st]) relax(this.footState(e.to), d + e.cost, state);
+          for (const e of this.busEdges[st]) relax(this.footState(e.to), d + e.cost, state);
         }
       } else {
         const node = state - 2 * n;
@@ -181,8 +192,16 @@ export class RouteFinder {
       } else if (prevIsLine && !curIsLine) {
         ride = null; // alighting is free
       } else {
-        // Walking between stations (train state to foot state, or at the start).
-        out.push({ kind: "transfer", station: stationOf(prev), to: stationOf(cur), minutes: cost, onFoot: true });
+        // Between stations on foot, or by bus (train state to foot state, or at the start).
+        const from = stationOf(prev);
+        const to = stationOf(cur);
+        const near = (e: Edge) => e.to === to && Math.abs(e.cost - cost) < 1e-6;
+        const bus = this.busEdges[from].find(near);
+        if (bus && !this.walkEdges[from].some(near)) {
+          out.push({ kind: "bus", routes: bus.routes ?? "", from, to, minutes: cost });
+        } else {
+          out.push({ kind: "transfer", station: from, to, minutes: cost, onFoot: true });
+        }
       }
     }
     return out;

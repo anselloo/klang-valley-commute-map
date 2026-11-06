@@ -28,7 +28,7 @@ Model figures are station to station (they include the average wait) and come fr
 | Gombak | KL Sentral | 39 | | KJL |
 | Kajang | KL Sentral | 54 | | MRT then change |
 | Sungai Buloh | Bukit Bintang | 43 | | MRT, one line |
-| Ampang | KLCC | 34 | | LRT then change |
+| Ampang | KLCC | 34 (19 with Bus) | | LRT then change; with the Bus choice, bus 300 straight there |
 | Putra Heights | KL Sentral | 55 | | longest single-line trip |
 | Klang | KL Sentral | 81 | | KTM Komuter, sparse trains |
 | KL Sentral | KLIA | 36 | | KLIA Ekspres, 28 min ride plus wait |
@@ -44,10 +44,11 @@ Model figures are station to station (they include the average wait) and come fr
 - **ERL is hand-entered.** KLIA Ekspres and KLIA Transit are in neither feed, so `data/erl.json` holds
   their stops (from OpenStreetMap) and the ride times and gaps from ERL's published schedule
   (kliaekspres.com, 1 Aug 2023). Transit's frequency is the least certain figure.
-- **Buses:** Rapid KL's feeder and city buses are modelled only as a way of reaching a station at either
-  end of a rail trip (about 160 stations), with changes between buses allowed. Waits are half the average
-  gap, and a change costs a short walk plus a minute. Other operators, and buses as the main mode of a
-  trip or in the middle of one, are not modelled.
+- **Buses:** Rapid KL's feeder and city buses are modelled as a way of reaching a station at either end
+  of a trip, and, with the Bus choice only, as a link between two stations in the middle of one (rail, bus, rail),
+  with changes between buses allowed. A bus link is used only where it beats the trains by 3 minutes or more. Waits
+  are half the average gap, a change costs a short walk plus a minute, and times come from the published
+  schedules, which do not include traffic. Other operators, and a trip made wholly by bus, are not modelled.
 - **Walking is straight-line x 1.6.** Measured against pedestrian routing (`scripts/calibrate_walking.py`)
   the median is 1.8x and the lower quartile 1.5x; one in ten spots needs more than 5x because of highways,
   rivers and missing footbridges. The model uses 1.6 on average, so those spots are still too optimistic.

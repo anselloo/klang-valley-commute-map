@@ -201,15 +201,7 @@ class BusGraph:
 
 
 def build(feeds, stations, window, days):
-    stops, names, ride, gaps = {}, {}, {}, {}
-    for prefix, path in feeds:
-        with zipfile.ZipFile(path) as zf:
-            s, n, r, h = read_feed(prefix, zf, window, days)
-        stops.update(s)
-        names.update(n)
-        ride.update(r)
-        gaps.update(h)
-    graph = BusGraph(stops, names, ride, gaps)
+    graph = load_graph(feeds, window, days)
 
     best = defaultdict(dict)  # stop index -> station -> [minutes to, minutes from, chain to, chain from]
     for si, st in enumerate(stations):
@@ -233,6 +225,46 @@ def build(feeds, stations, window, days):
             out.append([round(lat, 5), round(lon, 5),
                         [[si, round(v[0], 1), round(v[1], 1), v[2], v[3]] for si, v in usable[:KEEP_STATIONS]]])
     out.sort(key=lambda r: (r[0], r[1]))
+    return out
+
+
+def load_graph(feeds, window, days):
+    stops, names, ride, gaps = {}, {}, {}, {}
+    for prefix, path in feeds:
+        with zipfile.ZipFile(path) as zf:
+            s, n, r, h = read_feed(prefix, zf, window, days)
+        stops.update(s)
+        names.update(n)
+        ride.update(r)
+        gaps.update(h)
+    return BusGraph(stops, names, ride, gaps)
+
+
+def station_bus_edges(stations, window, days, feeds=None):
+    """Bus journeys between rail stations, for the rail search to use in the middle of a trip.
+
+    Returns [(from station, to station, minutes, routes)] for every ordered pair a bus journey (with
+    changes between buses) connects within MAX_LINK_MIN, including getting out of the first station
+    and into the second. The caller keeps only the ones that beat the trains.
+    """
+    feeds = feeds or [(prefix, path) for prefix, _, path in FEEDS]
+    graph = load_graph(feeds, window, days)
+    beside = []
+    for st in stations:
+        beside.append([i for i, ll in enumerate(graph.latlon) if g.distance_m(ll, (st["lat"], st["lon"])) <= STATION_RADIUS_M])
+    out = []
+    for a, stops in enumerate(beside):
+        if not stops:
+            continue
+        reach = graph.search(stops, backwards=False)
+        for b, targets in enumerate(beside):
+            if a == b:
+                continue
+            options = [(reach[t][0] + ENTRANCE_MIN, reach[t][1]) for t in targets if t in reach and reach[t][1]]
+            if options:
+                minutes, chain = min(options, key=lambda o: o[0])
+                if minutes <= MAX_LINK_MIN:
+                    out.append((a, b, round(minutes, 1), " > ".join(chain)))
     return out
 
 
