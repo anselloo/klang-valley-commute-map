@@ -163,13 +163,13 @@ From a second look at the whole app and at what commuters say (news coverage of 
 3. Bus data may lag: the city bus feed is dated 2020 to 2027 and still lists two routes the news says changed in October 2026 (T400B, T512B).
 4. Walking is an average factor: no covered walkways, crossings, safety or night-time information.
 5. Drivers are ignored: no driving, park and ride or motorbike comparison.
-6. English only (no Bahasa Malaysia); the shaded map has no text alternative beyond the new list.
+6. English only (no Bahasa Melayu); the shaded map has no text alternative beyond the new list.
 7. No commute cost: fares and monthly passes need data not yet found; rent was dropped.
 8. Never tested on a real phone.
 9. The demand for any of this is inferred. Asking five people who are looking for a home would tell more than more features.
 
 ## Later ideas (parking lot, don't build yet)
-- Bahasa Malaysia, and a real-phone and screen-reader check
+- Bahasa Melayu, and a real-phone and screen-reader check
 - Commute cost (fare per trip, monthly pass) once there is a fare data source
 - A disruption or reliability layer if APAD or Prasarana publish usable history
 - Penang and Johor Bahru versions (first check the Klang Valley times against Google Maps)
