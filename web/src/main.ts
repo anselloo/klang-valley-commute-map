@@ -7,7 +7,7 @@ import "./style.css";
 import { BasemapController, type Basemap } from "./basemap";
 import { breakdownHtml, escapeHtml } from "./breakdown";
 import { RouteFinder, type Graph } from "./graph";
-import { BUS, RIDE, WALK, bandOf, buildHexes, combine, compute, haversineKm, type Access, type Measure, type FeederStop, type Hex, type Near, type Result } from "./model";
+import { BUS, RIDE, WALK, bandOf, buildHexes, combine, combineValues, commuteFrom, compute, haversineKm, stationsNear, type Access, type Measure, type FeederStop, type Hex, type Near, type Result } from "./model";
 import { NetworkView } from "./networkView";
 import type { Station } from "./types";
 
@@ -283,7 +283,19 @@ async function start() {
   /** Which destination search, quick picks and pin placement change: 0 is A, 1 is B. */
   let slot = 0;
   let picking = false;
+  let pickTarget: "dest" | "cand" = "dest";
   let mode: "commute" | "network" = "commute";
+
+  /** Places the visitor is considering living in, kept in the link. */
+  interface Candidate {
+    lat: number;
+    lng: number;
+    label: string;
+  }
+  const MAX_CANDIDATES = 6;
+  const candidates: Candidate[] = [];
+  const candMarkers: maplibregl.Marker[] = [];
+  let meta: Meta | null = null;
 
   const PIN_COLORS = ["#c0392b", "#6c3fc5"];
   const slotName = (i: number) => (i === 0 ? "A" : "B");
@@ -313,15 +325,128 @@ async function start() {
     return `your pin near ${stations[best].name}`;
   }
 
-  function setPicking(on: boolean) {
+  function setPicking(on: boolean, target: "dest" | "cand" = "dest") {
     picking = on;
-    el("pick").classList.toggle("on", on);
-    el("pick").textContent = on ? "Tap the map to place it (cancel)" : "Or pick a spot on the map";
+    pickTarget = target;
+    const forDest = on && target === "dest";
+    const forCand = on && target === "cand";
+    el("pick").classList.toggle("on", forDest);
+    el("pick").textContent = forDest ? "Tap the map to place it (cancel)" : "Or pick a spot on the map";
+    el("cand-pick").classList.toggle("on", forCand);
+    el("cand-pick").textContent = forCand ? "Tap the map to add it (cancel)" : "Or tap the map to add one";
     document.body.classList.toggle("picking", on);
     if (on) {
-      statusEl.textContent = "Tap anywhere on the map to place your destination.";
+      statusEl.textContent = `Tap anywhere on the map to place ${forCand ? "a place you are considering" : "your destination"}.`;
       if (isPhone()) setCollapsed(true);
     }
+  }
+
+  // ---- Shortlist: places you are considering, each with its commute ---------------------------------
+  const bandDot = (minutes: number) => `<i style="background:${BAND_COLORS[bandOf(minutes)]}"></i>`;
+  const minutesLabel = (m: number) => (Number.isFinite(m) ? `${Math.round(m)} min` : "no route");
+
+  function renderCandidates() {
+    candMarkers.forEach((m) => m.remove());
+    candMarkers.length = 0;
+    const list = el("cand-list");
+    const used = [0, 1].filter((i) => results[i]);
+    list.innerHTML = candidates
+      .map((c, k) => {
+        const near = stationsNear(stations, c.lat, c.lng, access, feeder);
+        const each = used.map((i) => commuteFrom(near, results[i]!, reverse).minutes);
+        const total = each.length ? combineValues(each, measure, used.map((i) => weights[i])) : Infinity;
+        const detail = used.length === 2 ? `<span class="cand-times">A ${minutesLabel(each[0])} · B ${minutesLabel(each[1])}</span>` : "";
+        return (
+          `<li class="cand"><span class="cand-n">${k + 1}</span><span class="cand-name" title="${escapeHtml(c.label)}">${escapeHtml(c.label)}</span>` +
+          `${detail}<span class="cand-total">${bandDot(total)}${minutesLabel(total)}</span>` +
+          `<button type="button" class="cand-remove" data-remove="${k}" aria-label="Remove ${escapeHtml(c.label)}">×</button></li>`
+        );
+      })
+      .join("");
+    list.querySelectorAll<HTMLElement>(".cand").forEach((row, k) => {
+      row.addEventListener("click", (ev) => {
+        if ((ev.target as HTMLElement).closest(".cand-remove")) return;
+        map.flyTo({ center: [candidates[k].lng, candidates[k].lat], zoom: Math.max(map.getZoom(), 12.5) });
+      });
+    });
+    list.querySelectorAll<HTMLButtonElement>(".cand-remove").forEach((b) => {
+      b.addEventListener("click", () => {
+        candidates.splice(Number(b.dataset.remove), 1);
+        renderCandidates();
+        writeHash();
+      });
+    });
+    if (mode === "commute") {
+      candidates.forEach((c, k) => {
+        const pin = document.createElement("div");
+        pin.className = "cand-pin";
+        pin.textContent = String(k + 1);
+        pin.title = c.label;
+        candMarkers.push(new maplibregl.Marker({ element: pin }).setLngLat([c.lng, c.lat]).addTo(map));
+      });
+    }
+  }
+
+  function addCandidate(c: Candidate) {
+    if (candidates.length >= MAX_CANDIDATES) {
+      statusEl.textContent = `You can compare up to ${MAX_CANDIDATES} places. Remove one to add another.`;
+      return;
+    }
+    candidates.push({ ...c, label: c.label.replace(/[,|]/g, " ").slice(0, 60) });
+    renderCandidates();
+    writeHash();
+  }
+
+  // ---- Ranking: the stations with the shortest commute, as a list ----------------------------------
+  function renderRanking() {
+    const used = [0, 1].filter((i) => results[i]);
+    const list = el("rank-list");
+    if (!used.length) {
+      list.innerHTML = "";
+      return;
+    }
+    const rows = stations
+      .map((s, i) => ({ s, i, minutes: combineValues(used.map((k) => results[k]!.stationTimes[i]), measure, used.map((k) => weights[k])) }))
+      .filter((r) => Number.isFinite(r.minutes) && r.minutes > 3)
+      .sort((a, b) => a.minutes - b.minutes)
+      .slice(0, 8);
+    const dir = reverse ? "from" : "to";
+    el("rank-note").textContent =
+      used.length === 2
+        ? `Minutes ${measure === "average" ? "(average trip)" : "(the longer trip)"} ${dir} both destinations, from the station itself. Add a few minutes for the walk or ride to it.`
+        : `Minutes ${dir} your destination, from the station itself. Add a few minutes for the walk or ride to it.`;
+    list.innerHTML = rows
+      .map(
+        (r) =>
+          `<li><button type="button" class="rank" data-station="${r.i}"><span class="rank-name">${escapeHtml(r.s.name)}</span>` +
+          `<span class="rank-lines">${escapeHtml(r.s.lines.slice(0, 3).join(" · "))}</span>` +
+          `<span class="rank-total">${bandDot(r.minutes)}${Math.round(r.minutes)} min</span></button></li>`,
+      )
+      .join("");
+    list.querySelectorAll<HTMLButtonElement>(".rank").forEach((b) => {
+      b.addEventListener("click", () => {
+        const s = stations[Number(b.dataset.station)];
+        map.flyTo({ center: [s.lon, s.lat], zoom: Math.max(map.getZoom(), 12.5) });
+        if (isPhone()) setCollapsed(true);
+      });
+    });
+  }
+
+  /** The data note under the panel: when it was built, bus feed freshness, and expiry warnings. */
+  function renderDataInfo() {
+    if (!meta) return;
+    const today = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+    const expired = Object.values(meta.feeds).some((f) => f.valid_to && f.valid_to < today);
+    let text = `Timetable data built ${prettyDate(meta.built)}.`;
+    if (expired) text += " Part of this timetable has expired, so some times may be out of date.";
+    if (access.id === "bus") {
+      const f = meta.feeds.feeder?.valid_to;
+      const c = meta.feeds.city?.valid_to;
+      text +=
+        " Bus routes change often: Rapid KL has been converting low-use routes to on-demand service (19 in January 2026, 10 more in February), and on-demand service is not modelled." +
+        (f && c ? ` Feeder bus timetable valid to ${prettyDate(f)}, city buses to ${prettyDate(c)}.` : "");
+    }
+    el("data-info").textContent = text;
   }
 
   /** Keep the address bar describing the current view, so the link can be shared. */
@@ -340,6 +465,7 @@ async function start() {
       p.set("m", "avg");
       p.set("w", weights.join(","));
     }
+    if (candidates.length) p.set("h", candidates.map((c) => `${c.lat.toFixed(5)},${c.lng.toFixed(5)},${c.label}`).join("|"));
     history.replaceState(null, "", `#${p.toString().replaceAll("%2C", ",")}`);
   }
 
@@ -350,6 +476,7 @@ async function start() {
       b.setAttribute("aria-pressed", String(on));
     });
     el("access").style.setProperty("--i", String(["walk", "bus", "ride"].indexOf(access.id)));
+    renderDataInfo();
     el("access-note").textContent =
       access.id === "walk"
         ? "Stations within a 1.5 km walk, at 4.5 km/h."
@@ -494,6 +621,8 @@ async function start() {
       : compare
         ? "Tap a coloured area to see both trips from there."
         : "Tap a coloured area to see how you would get there.";
+    renderCandidates();
+    renderRanking();
     writeHash();
   }
 
@@ -596,7 +725,13 @@ async function start() {
       return;
     }
     if (picking) {
-      void setDestination({ lng: e.lngLat.lng, lat: e.lngLat.lat, label: nearestLabel(e.lngLat.lng, e.lngLat.lat) });
+      const spot = { lng: e.lngLat.lng, lat: e.lngLat.lat, label: nearestLabel(e.lngLat.lng, e.lngLat.lat) };
+      if (pickTarget === "cand") {
+        setPicking(false);
+        addCandidate(spot);
+      } else {
+        void setDestination(spot);
+      }
       return;
     }
     if (!dests.some(Boolean)) return;
@@ -610,7 +745,27 @@ async function start() {
       if (isPhone()) setCollapsed(false);
     }
   });
-  el("pick").addEventListener("click", () => setPicking(!picking));
+  el("pick").addEventListener("click", () => setPicking(!(picking && pickTarget === "dest"), "dest"));
+  el("cand-pick").addEventListener("click", () => setPicking(!(picking && pickTarget === "cand"), "cand"));
+  el<HTMLFormElement>("cand-form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const input = el<HTMLInputElement>("cand-input");
+    const q = input.value.trim();
+    if (!q) return;
+    statusEl.textContent = "Searching…";
+    try {
+      const hit = await geocode(q);
+      if (!hit) {
+        statusEl.textContent = `No match for "${q}" in the Klang Valley. Try a nearby landmark or station name.`;
+        return;
+      }
+      addCandidate(hit);
+      input.value = "";
+      statusEl.textContent = `Added ${hit.label}.`;
+    } catch {
+      statusEl.textContent = "Search is unavailable right now. Tap the map to add a place instead.";
+    }
+  });
   document.querySelectorAll<HTMLButtonElement>("#slots button").forEach((b) => {
     b.addEventListener("click", () => setSlot(Number(b.dataset.slot)));
   });
@@ -748,10 +903,8 @@ async function start() {
   // "Data as of": when the timetable was built, and a warning if a feed has expired.
   void loadJson<Meta>("meta.json")
     .then((m) => {
-      const today = new Date().toISOString().slice(0, 10).replaceAll("-", "");
-      const expired = Object.values(m.feeds).some((f) => f.valid_to && f.valid_to < today);
-      el("data-info").textContent =
-        `Timetable data built ${prettyDate(m.built)}.` + (expired ? " Part of this timetable has expired, so some times may be out of date." : "");
+      meta = m;
+      renderDataInfo();
     })
     .catch(() => undefined);
 
@@ -797,6 +950,7 @@ async function start() {
       setPicking(false);
       breakdownPopup.remove();
       markers.forEach((m) => m.remove());
+      candMarkers.forEach((m) => m.remove());
       map.setLayoutProperty("hex-fill", "visibility", "none");
       statusEl.textContent = "";
       if (isPhone()) setCollapsed(true);
@@ -819,6 +973,12 @@ async function start() {
 
   // A shared link opens straight onto its destination.
   const hash = new URLSearchParams(location.hash.slice(1));
+  for (const part of (hash.get("h") ?? "").split("|").slice(0, MAX_CANDIDATES)) {
+    const [lat, lng, ...name] = part.split(",");
+    if (Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)) && inValley(Number(lat), Number(lng))) {
+      candidates.push({ lat: Number(lat), lng: Number(lng), label: name.join(" ").slice(0, 60) || "Place" });
+    }
+  }
   const [sharedLat, sharedLng] = (hash.get("to") ?? "").split(",").map(Number);
   if (Number.isFinite(sharedLat) && Number.isFinite(sharedLng) && inValley(sharedLat, sharedLng)) {
     const name = (hash.get("name") ?? "").slice(0, 80) || nearestLabel(sharedLng, sharedLat);

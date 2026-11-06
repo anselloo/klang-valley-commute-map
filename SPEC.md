@@ -150,6 +150,27 @@ For anyone with two places to reach: two workplaces, a workplace and a campus, o
 - Averaging keeps the 30/45/60 bands meaningful (they stay minutes per trip). The popup headline follows the measure ("on average per trip" or "for the slower trip").
 - The link carries it (`&m=avg&w=5,2`). Logic is `combine()` in `web/src/model.ts`, with unit tests for the maths and edge cases.
 
+## v5: answers, not just a map (built)
+From a second look at the whole app and at what commuters say (news coverage of Klang Valley transport complaints, a crowdsourced last-mile project, app-store reviews, an expat forum thread; no social media posts were reachable, so this is inference, not measurement).
+
+- **Compare places you are considering.** Up to six places, added by search or by tapping the map, each shown with its commute to destination A (and B), the combined figure under the current measure, and a colour dot in the map's bands. Numbered pins on the map; tapping a row flies there; the list is saved in the link (`&h=lat,lng,name|...`). Logic: `commuteFrom()` and `combineValues()` in `web/src/model.ts`.
+- **Best stations to live near.** The eight stations with the shortest commute (the longer trip or the weighted average, to or from the destinations), as a list. It is plain text, so it works with a screen reader, which the shaded map does not.
+- **Bus freshness.** `meta.json` now carries each bus feed's validity. Choosing Bus adds a note: Rapid KL has been converting low-use routes to on-demand service (19 in January 2026, 10 more in February), on-demand service is not modelled, and the feeder timetable is valid to <date> and city buses to <date>.
+
+### Gaps found by the review (not built)
+1. Most of the travel-time model is unchecked: one independent figure caught the Putrajaya Line error; only two lines had published run times to compare.
+2. No reliability or crowding (breakdowns, delays and overcrowding are the common complaints).
+3. Bus data may lag: the city bus feed is dated 2020 to 2027 and still lists two routes the news says changed in October 2026 (T400B, T512B).
+4. Walking is an average factor: no covered walkways, crossings, safety or night-time information.
+5. Drivers are ignored: no driving, park and ride or motorbike comparison.
+6. English only (no Bahasa Malaysia); the shaded map has no text alternative beyond the new list.
+7. No commute cost: fares and monthly passes need data not yet found; rent was dropped.
+8. Never tested on a real phone.
+9. The demand for any of this is inferred. Asking five people who are looking for a home would tell more than more features.
+
 ## Later ideas (parking lot, don't build yet)
+- Bahasa Malaysia, and a real-phone and screen-reader check
+- Commute cost (fare per trip, monthly pass) once there is a fare data source
+- A disruption or reliability layer if APAD or Prasarana publish usable history
 - Penang and Johor Bahru versions (first check the Klang Valley times against Google Maps)
 - Rents were dropped: no open dataset, and the listing sites forbid scraping

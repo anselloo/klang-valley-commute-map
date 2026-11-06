@@ -243,6 +243,27 @@ await page.click("#remove-b");
 await page.waitForTimeout(2000);
 ok("removing B returns to one destination", /^Train time to /.test(await text("summary")) && !(await page.evaluate(() => location.hash)).includes("to2="), await text("summary"));
 
+// Shortlist and ranking.
+await page.fill("#cand-input", "Bangsar");
+await page.click("#cand-form button[type='submit']");
+await page.waitForTimeout(1500);
+const cand = (await text("cand-list")).replace(/\s+/g, " ");
+ok("a place can be added to the shortlist with its commute", /Bangsar/.test(cand) && /\d+ min/.test(cand), cand);
+ok("the shortlist is saved in the address", (await page.evaluate(() => location.hash)).includes("h="));
+const rank = (await text("rank-list")).replace(/\s+/g, " ");
+ok("the ranking lists stations with minutes", (await page.locator("#rank-list .rank").count()) >= 5 && /\d+ min/.test(rank), rank.slice(0, 120));
+await page.click("#cand-list .cand-remove");
+await page.waitForTimeout(500);
+ok("a shortlisted place can be removed", (await page.locator("#cand-list .cand").count()) === 0);
+const sharedList = await browser.newPage({ viewport: { width: 1200, height: 800 } });
+await sharedList.goto(base + "?debug#to=3.13434,101.6862&name=KL%20Sentral&h=3.1296,101.6791,Bangsar|3.0732,101.6071,Subang%20Jaya", { waitUntil: "load" });
+await sharedList.waitForTimeout(5500);
+ok("a shared link restores the shortlist", (await sharedList.locator("#cand-list .cand").count()) === 2);
+await sharedList.click("#access button[data-access='bus']");
+await sharedList.waitForTimeout(2500);
+ok("the bus option shows the feed freshness note", /valid to/.test(await sharedList.evaluate(() => document.getElementById("data-info").innerText)));
+await sharedList.close();
+
 // If the base-map style service is down, the app falls back to plain OSM tiles and still works.
 const down = await browser.newPage({ viewport: { width: 1200, height: 800 } });
 await down.route("**/tiles.openfreemap.org/**", (route) => route.abort());

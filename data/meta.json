@@ -8,6 +8,14 @@
   "ktmb": {
    "valid_from": "20260818",
    "valid_to": "20261120"
+  },
+  "feeder": {
+   "valid_from": "20261106",
+   "valid_to": "20261206"
+  },
+  "city": {
+   "valid_from": "20200401",
+   "valid_to": "20270331"
   }
  }
 }

@@ -121,6 +121,26 @@
             <button type="button" id="share" class="btn wide">Copy a link to this map</button>
           </section>
 
+          <section id="shortlist">
+            <h2><span class="n">5</span> Compare places you are considering</h2>
+            <p class="small">Add a few addresses or spots to see each one's commute at a glance. They are saved in the link.</p>
+            <form id="cand-form" autocomplete="off">
+              <label class="field">
+                <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <input id="cand-input" type="search" placeholder="Add an address or place" aria-label="Add a place you are considering" />
+              </label>
+              <button type="submit" class="pill tint">Add</button>
+            </form>
+            <button type="button" id="cand-pick" class="btn wide">Or tap the map to add one</button>
+            <ol id="cand-list" aria-label="Places you are considering"></ol>
+          </section>
+
+          <section id="ranking">
+            <h2><span class="n">6</span> Best stations to live near</h2>
+            <p class="small" id="rank-note"></p>
+            <ol id="rank-list"></ol>
+          </section>
+
           <details>
             <summary>How is this calculated?</summary>
             <p class="small">

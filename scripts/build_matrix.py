@@ -234,6 +234,16 @@ def write_meta():
             "valid_from": min((r["start_date"] for r in calendar), default=None),
             "valid_to": max((r["end_date"] for r in calendar), default=None),
         }
+    # The bus feeds too: Rapid KL keeps converting low-use routes to on-demand service, so say how fresh they are.
+    import build_feeder as bf
+
+    for prefix, _, path in bf.FEEDS:
+        with zipfile.ZipFile(path) as zf:
+            calendar = g.read_table(zf, "calendar.txt")
+        feeds["feeder" if prefix == "mrtfeeder" else "city"] = {
+            "valid_from": min((r["start_date"] for r in calendar), default=None),
+            "valid_to": max((r["end_date"] for r in calendar), default=None),
+        }
     meta = {"built": datetime.now(timezone.utc).strftime("%Y-%m-%d"), "feeds": feeds}
     (DATA_DIR / "meta.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
 

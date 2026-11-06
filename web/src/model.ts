@@ -114,16 +114,33 @@ export type Measure = "worst" | "average";
  */
 export function combine(results: Result[], measure: Measure, weights: number[] = [1, 1]): Float64Array {
   if (measure === "worst") return slowest(results);
-  const w = weights.every((x) => !(x > 0)) ? results.map(() => 1) : results.map((_, i) => Math.max(0, weights[i] ?? 0));
-  const total = w.reduce((a, b) => a + b, 0);
   const n = results[0].hexTimes.length;
   const out = new Float64Array(n);
-  for (let i = 0; i < n; i++) {
-    let sum = 0;
-    for (let k = 0; k < results.length; k++) if (w[k] > 0) sum += w[k] * results[k].hexTimes[i];
-    out[i] = sum / total;
-  }
+  for (let i = 0; i < n; i++) out[i] = combineValues(results.map((r) => r.hexTimes[i]), measure, weights);
   return out;
+}
+
+/** The same combining for one set of minutes, for example one candidate home's trip to each destination. */
+export function combineValues(values: number[], measure: Measure, weights: number[] = [1, 1]): number {
+  if (measure === "worst") return Math.max(...values);
+  const w = weights.every((x) => !(x > 0)) ? values.map(() => 1) : values.map((_, i) => Math.max(0, weights[i] ?? 0));
+  const total = w.reduce((a, b) => a + b, 0);
+  let sum = 0;
+  for (let k = 0; k < values.length; k++) if (w[k] > 0) sum += w[k] * values[k];
+  return sum / total;
+}
+
+/**
+ * Minutes between a place and a destination by train: the best way onto the rail network from the
+ * place (`near`, from stationsNear) plus the trip from that station, in the direction of the view.
+ */
+export function commuteFrom(near: Near[], result: Result, reverse = false): { minutes: number; station: number } {
+  let best = { minutes: Infinity, station: -1 };
+  for (const n of near) {
+    const minutes = (reverse ? (n.back ?? n.walk) : n.walk) + result.stationTimes[n.station];
+    if (minutes < best.minutes) best = { minutes, station: n.station };
+  }
+  return best;
 }
 
 /** The H3 grid of hexes that have at least one station in walking range. */

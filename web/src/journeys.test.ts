@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { BUS, haversineKm, RIDE, WALK, accessMinutes, buildHexes, combine, compute, slowest, type FeederStop } from "./model";
+import { BUS, haversineKm, RIDE, WALK, accessMinutes, buildHexes, combine, combineValues, commuteFrom, compute, slowest, stationsNear, type FeederStop } from "./model";
 import type { Station } from "./types";
 
 const read = <T>(name: string) =>
@@ -306,5 +306,41 @@ describe("the matrices that include bus links between stations", () => {
     const j = idsOf("KLCC")[0];
     expect(bus[i][j]!).toBeLessThan(25);
     expect(matrix[i][j]!).toBeGreaterThan(25);
+  });
+});
+
+describe("candidate homes", () => {
+  const hexes = buildHexes(stations, WALK);
+  const at = (name: string) => {
+    const s = stations.find((x) => x.name === name)!;
+    return compute(stations, matrix, hexes, s.lat, s.lon, WALK);
+  };
+
+  it("combineValues agrees with combine for the same numbers", () => {
+    const a = at("KL Sentral");
+    const b = at("Subang Jaya");
+    for (const measure of ["worst", "average"] as const) {
+      const both = combine([a, b], measure, [5, 2]);
+      for (const i of [0, 100, 500, 1000]) {
+        if (i < hexes.length) expect(combineValues([a.hexTimes[i], b.hexTimes[i]], measure, [5, 2])).toBe(both[i]);
+      }
+    }
+  });
+
+  it("commuteFrom gives the same minutes the map shades for that spot", () => {
+    const r = at("KL Sentral");
+    const h = hexes[Math.floor(hexes.length / 3)];
+    const near = stationsNear(stations, h.lat, h.lon, WALK);
+    const i = hexes.indexOf(h);
+    const c = commuteFrom(near, r, false);
+    // A hex centre and the same coordinates give the same stations in range, so the minutes match.
+    expect(c.minutes).toBeCloseTo(r.hexTimes[i], 6);
+  });
+
+  it("a place with no station in reach has no route", () => {
+    const r = at("KL Sentral");
+    const c = commuteFrom(stationsNear(stations, 3.5, 101.4, WALK), r, false);
+    expect(c.minutes).toBe(Infinity);
+    expect(c.station).toBe(-1);
   });
 });
