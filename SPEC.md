@@ -107,6 +107,18 @@ An animated view of the rail network on the same map, as a second tab next to th
 - A Map / Satellite switch. Map is the OpenFreeMap Bright style with its saturated road colours softened so transit lines and travel-time shading stand out; Satellite is Esri World Imagery under the same place labels (recoloured white with a dark halo). Both are layers of one style, so switching never rebuilds the map or loses the destination, shading or trains. The choice is remembered.
 - A redesigned interface in an Apple-like style: frosted-glass panels, system colours with a blue tint, a type scale in the system font (Inter as the stand-in off Apple devices), iOS-style segmented controls with a sliding thumb, capsule buttons, grouped lists, colour-coded line badges, a bottom sheet with a grabber on phones, and automatic dark mode. Motion respects the reduced-motion setting.
 
+## v3: practicality and trust (built)
+Fixes from a review of the whole app.
+
+- **Getting to a station:** Walk (1.5 km) or Bike / e-hail (4 km, about 20 km/h plus 4 minutes). Shorter distances are still walked, so the second mode never gives a worse time. This addresses the main impracticality of the train-only map: most of the valley is more than 1.5 km from a station.
+- **Shareable links:** the address bar holds the destination and access mode (`#to=lat,lng&name=...&via=ride`); a shared link opens on it. A "Copy a link" button sits under the legend.
+- **Honesty about the data:** "Timetable data built <date>" in the panel (from `data/meta.json`), a warning once part of a timetable has expired, and a note in the network view that trains are simulated from the timetable. "Now" uses Kuala Lumpur time, and says when it is the weekend that the weekday timetable is shown.
+- **Waits:** the average gap used for waits is capped at 40 minutes, and stops with no train in the morning window fall back to the day's average gap. The review's sanity tests found stops with 100+ minute waits and a Kajang to Kajang 2 hop that took 110 minutes one way and 18 the other; both are gone.
+- **Search resilience:** station names are matched locally first, results are cached, requests are spaced at least 1.1 s apart, and Photon is tried when Nominatim fails.
+- **Data safety:** `scripts/validate_data.py` runs in the monthly refresh before anything is committed, and fails on a large drop in stations, lines or trips, or on unreachable pairs. Browser checks live in `web/e2e/` and run in CI (`.github/workflows/e2e.yml`). Plausibility tests on real journeys, speeds and symmetry are in `web/src/journeys.test.ts`.
+- **Still to do by a person:** compare the times with Google Maps using [docs/VERIFY.md](docs/VERIFY.md).
+- **Still not covered:** ERL (not in the feeds), feeder buses, weekend/evening timetables, rents. See the caveats in the README.
+
 ## Later ideas (parking lot, don't build yet)
 - Add Rapid KL buses and MRT feeder buses
 - "Compare two destinations" mode for couples with different workplaces
