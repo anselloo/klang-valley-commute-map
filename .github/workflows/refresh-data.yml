@@ -20,6 +20,8 @@ jobs:
           python-version: "3.12"
       - name: Rebuild stations, matrices and graphs
         run: python scripts/build_matrix.py --refresh
+      - name: Rebuild the train network data
+        run: python scripts/build_network.py
       - name: Commit and redeploy if the data changed
         env:
           GH_TOKEN: ${{ github.token }}
