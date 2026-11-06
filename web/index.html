@@ -6,24 +6,69 @@
     <link rel="icon" href="data:," />
     <link rel="preload" href="./data/stations.json" as="fetch" crossorigin />
     <link rel="preload" href="./data/matrix-0800.json" as="fetch" crossorigin />
-    <title>Klang Valley Commute Map</title>
-    <meta name="description" content="See where in the Klang Valley you could live and reach your office or campus by train in 30, 45 or 60 minutes." />
+    <title>Where can I live? Klang Valley commute map</title>
+    <meta name="description" content="See which parts of the Klang Valley are within 30, 45 or 60 minutes by train of your office or campus." />
   </head>
   <body>
     <div id="map"></div>
-    <aside id="panel">
-      <h1>Klang Valley commute map</h1>
-      <form id="search" autocomplete="off">
-        <input id="search-input" type="search" placeholder="Search your office or campus" aria-label="Search for a destination" />
-        <button type="submit">Go</button>
-      </form>
-      <div id="arrival" role="group" aria-label="Arrival time (weekday)">
-        <button type="button" data-window="0800" class="on" aria-pressed="true">Arrive 8:00 am</button>
-        <button type="button" data-window="0900" aria-pressed="false">Arrive 9:00 am</button>
+    <aside id="panel" aria-label="Commute controls">
+      <header id="panel-head">
+        <div>
+          <h1>Where can I live?</h1>
+          <p id="summary">Loading…</p>
+          <ul id="mini-legend" aria-hidden="true"></ul>
+          <p id="peek"></p>
+        </div>
+        <button type="button" id="collapse" aria-expanded="true" aria-controls="panel-body">Hide</button>
+      </header>
+
+      <div id="panel-body">
+        <p id="lede">
+          Pick where you work or study. The map colours every area by how long the train
+          journey to it takes, door to door.
+        </p>
+
+        <section>
+          <h2><span class="n">1</span> Where do you work or study?</h2>
+          <form id="search" autocomplete="off">
+            <input id="search-input" type="search" placeholder="Search a place or address" aria-label="Search for a place or address" />
+            <button type="submit">Search</button>
+          </form>
+          <div id="chips" aria-label="Quick picks"></div>
+          <button type="button" id="pick">Or pick a spot on the map</button>
+        </section>
+
+        <section>
+          <h2><span class="n">2</span> When do you need to arrive?</h2>
+          <div id="arrival" role="group" aria-label="Arrival time on a weekday">
+            <button type="button" data-window="0800" class="on" aria-pressed="true">8:00 am</button>
+            <button type="button" data-window="0900" aria-pressed="false">9:00 am</button>
+          </div>
+          <p class="small">Weekday mornings. Trains are a little less frequent before 7 am.</p>
+        </section>
+
+        <section>
+          <h2><span class="n">3</span> Read the map</h2>
+          <p class="small" id="legend-title">Time from each area to your destination:</p>
+          <ul id="legend"></ul>
+          <p class="small">
+            <strong>Tap a coloured area</strong> to see the trip: walk, train, changes.
+            Uncoloured areas have no station within a 1.5 km walk.
+          </p>
+        </section>
+
+        <details>
+          <summary>How is this calculated?</summary>
+          <p class="small">
+            Train times come from the official LRT, MRT, Monorail, BRT and KTM Komuter
+            timetables. Waiting is half the average gap between trains, each change adds
+            5 minutes, and walking is estimated at 4.5 km/h in a straight line plus 30%.
+            Buses and e-hailing are not included, so treat results as a guide.
+          </p>
+        </details>
+
+        <p id="status" role="status"></p>
       </div>
-      <p id="hint">Click the map where you work or study. Shading shows door-to-door train travel time to it.</p>
-      <ul id="legend"></ul>
-      <p id="status"></p>
     </aside>
     <script type="module" src="/src/main.ts"></script>
   </body>

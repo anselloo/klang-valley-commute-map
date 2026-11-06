@@ -2,16 +2,19 @@
 
 Pick where you work or study, and see every part of the Klang Valley you could live in and get there by train within 30, 45 or 60 minutes.
 
-![Commute map shaded around KL Sentral, with a trip breakdown open](docs/screenshot.png)
+![Commute map shaded around Subang Jaya, with a trip breakdown open](docs/screenshot.png)
 
 Live site: https://anselloo.github.io/klang-valley-commute-map/ (available once GitHub Pages is switched on, see [Deploying](#deploying)).
 
 ## What it does
 
-- Click the map (or search) for your destination. The map shades an H3 hex grid by total door-to-door travel time: under 30 min, 30–45, 45–60, and over 60.
-- Click any shaded area for a breakdown: walk to the station, wait, each ride with its line and stops, changes, and the walk at the end.
-- Toggle between arriving at 8:00 am and 9:00 am on a weekday.
-- Drag the pin to move the destination; shading updates in a few milliseconds.
+The site opens on a worked example (KL Sentral at 8:00 am) so you can see what it shows straight away. Then:
+
+1. **Choose where you work or study**: search a place, tap a quick pick (KL Sentral, KLCC, Bukit Bintang, Mid Valley, Subang Jaya, Sunway), or choose "pick a spot on the map". You can also drag the pin.
+2. **Choose when you arrive**: 8:00 am or 9:00 am on a weekday.
+3. **Read the map**: an H3 hex grid is shaded by total door-to-door travel time to your destination (under 30 min, 30–45, 45–60, over 60). Uncoloured areas have no station within a 1.5 km walk. Tap any coloured area for the trip: walk, wait, each ride with its line and stops, changes, and the final walk.
+
+Shading updates in a few milliseconds. On a phone the controls sit in a bottom sheet that collapses to a short strip, so the map stays in view.
 
 Rail only for v1: LRT, MRT, Monorail, BRT Sunway and KTM Komuter. No buses, no real-time data, no backend. See [SPEC.md](SPEC.md).
 
