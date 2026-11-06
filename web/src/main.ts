@@ -5,6 +5,7 @@ import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { cellToBoundary } from "h3-js";
 import "./style.css";
 import { BasemapController, type Basemap } from "./basemap";
+import { applyStatic, lang, locale, setLang, t, type Key } from "./i18n";
 import { breakdownHtml, escapeHtml } from "./breakdown";
 import { RouteFinder, type Graph } from "./graph";
 import { BUS, RIDE, WALK, bandOf, buildHexes, combine, combineValues, commuteFrom, compute, haversineKm, stationsNear, type Access, type Measure, type FeederStop, type Hex, type Near, type Result } from "./model";
@@ -40,7 +41,7 @@ async function loadStyle(): Promise<maplibregl.StyleSpecification> {
 }
 const KL_CENTER: [number, number] = [101.6869, 3.139];
 const BAND_COLORS = ["#0b5394", "#3d8fd1", "#9cc9ec", "#d4d4d4"];
-const BAND_LABELS = ["Under 30 min", "30–45 min", "45–60 min", "Over 60 min"];
+const BAND_LABELS = (["band.u30", "band.30", "band.45", "band.o60"] as Key[]).map((k) => t(k));
 /** One-tap destinations: chip label and the station name to use. */
 const QUICK_PICKS = [
   { label: "KL Sentral", station: "KL Sentral" },
@@ -68,7 +69,7 @@ interface Meta {
 }
 const prettyDate = (d: string) => {
   const iso = /^\d{8}$/.test(d) ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}` : d;
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale(), { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 };
 
 async function loadJson<T>(name: string): Promise<T> {
@@ -83,22 +84,28 @@ const statusEl = el("status");
 const summaryEl = el("summary");
 const peekEl = el("peek");
 const isPhone = () => window.matchMedia("(max-width: 600px)").matches;
-const PEEK_EXAMPLE = "Example destination. Tap Options to choose your own.";
-const PEEK_TIP = "Tap a coloured area to see the trip. Tap Options to change the destination.";
+const PEEK_EXAMPLE = t("peek.example");
+const PEEK_TIP = t("peek.tip");
+applyStatic();
+const langToggle = el<HTMLButtonElement>("lang-toggle");
+langToggle.textContent = t("lang.switch.short");
+langToggle.title = t("lang.switch");
+langToggle.lang = lang === "en" ? "ms" : "en";
+langToggle.addEventListener("click", () => setLang(lang === "en" ? "ms" : "en"));
 
 el("legend").innerHTML = BAND_LABELS.map(
   (label, i) => `<li><span class="swatch" style="background:${BAND_COLORS[i]}"></span>${label}</li>`,
 ).join("");
 
-el("mini-legend").innerHTML = ["Under 30", "30–45", "45–60", "Over 60"]
-  .map((label, i) => `<li><span class="swatch" style="background:${BAND_COLORS[i]}"></span>${label} min</li>`)
-  .join("");
+el("mini-legend").innerHTML = BAND_LABELS.map(
+  (label, i) => `<li><span class="swatch" style="background:${BAND_COLORS[i]}"></span>${label}</li>`,
+).join("");
 
 // Panel: collapsible, and on phones it is a bottom sheet that keeps the map controls clear of it.
 const collapseBtn = el<HTMLButtonElement>("collapse");
 function setCollapsed(collapsed: boolean) {
   panel.classList.toggle("collapsed", collapsed);
-  collapseBtn.textContent = collapsed ? "Options" : "Hide";
+  collapseBtn.textContent = collapsed ? t("collapse.options") : t("collapse.hide");
   collapseBtn.setAttribute("aria-expanded", String(!collapsed));
 }
 collapseBtn.addEventListener("click", () => setCollapsed(!panel.classList.contains("collapsed")));
@@ -131,10 +138,10 @@ const mapLoaded = new Promise<void>((resolve) => map.on("load", () => resolve())
 // The matrix loads up front; the route graph loads the first time a breakdown is requested.
 type When = "am" | "pm" | "sat" | "sun";
 const WHEN: Record<When, { suffix: string; label: string; hours: string }> = {
-  am: { suffix: "", label: "weekday morning", hours: "Weekday morning (trains departing 7–9 am)" },
-  pm: { suffix: "-pm", label: "weekday evening", hours: "Weekday evening (trains departing 5–7:30 pm)" },
-  sat: { suffix: "-sat", label: "Saturday", hours: "Saturday (trains departing 10 am–12 pm)" },
-  sun: { suffix: "-sun", label: "Sunday", hours: "Sunday (trains departing 10 am–12 pm)" },
+  am: { suffix: "", label: t("when.label.am"), hours: t("when.hours.am") },
+  pm: { suffix: "-pm", label: t("when.label.pm"), hours: t("when.hours.pm") },
+  sat: { suffix: "-sat", label: t("when.label.sat"), hours: t("when.hours.sat") },
+  sun: { suffix: "-sun", label: t("when.label.sun"), hours: t("when.hours.sun") },
 };
 // With the Bus choice the trains are joined by bus links between stations (matrix-*-bus.json).
 const matrices = new Map<string, Promise<Matrix>>([["am", loadJson<Matrix>("matrix.json")]]);
@@ -240,7 +247,7 @@ async function start() {
   basemap.init();
   const noteFallback = () => {
     if (usingFallbackStyle) {
-      statusEl.textContent += " The detailed base map service is not responding, so a simpler map is shown; everything else works as usual.";
+      statusEl.textContent += ` ${t("base.fallback")}`;
     }
   };
   addMapLayers(stations, hexes);
@@ -304,9 +311,9 @@ async function start() {
     const m = new maplibregl.Marker({ color, draggable: true });
     const label = document.createElement("span");
     label.className = "pin-label";
-    label.textContent = "Destination";
+    label.textContent = t("pin.label");
     m.getElement().appendChild(label);
-    m.getElement().title = "Drag to move this destination.";
+    m.getElement().title = t("pin.drag");
     m.on("dragend", () => {
       const { lng, lat } = m.getLngLat();
       void setDestination({ lng, lat, label: nearestLabel(lng, lat) }, i);
@@ -322,7 +329,7 @@ async function start() {
       const km = haversineKm(lat, lng, s.lat, s.lon);
       if (km < bestKm) [best, bestKm] = [i, km];
     });
-    return `your pin near ${stations[best].name}`;
+    return t("pin.near", { station: stations[best].name });
   }
 
   function setPicking(on: boolean, target: "dest" | "cand" = "dest") {
@@ -331,19 +338,19 @@ async function start() {
     const forDest = on && target === "dest";
     const forCand = on && target === "cand";
     el("pick").classList.toggle("on", forDest);
-    el("pick").textContent = forDest ? "Tap the map to place it (cancel)" : "Or pick a spot on the map";
+    el("pick").textContent = forDest ? t("pick.cancel") : t("pick.default");
     el("cand-pick").classList.toggle("on", forCand);
-    el("cand-pick").textContent = forCand ? "Tap the map to add it (cancel)" : "Or tap the map to add one";
+    el("cand-pick").textContent = forCand ? t("cand.pick.cancel") : t("cand.pick");
     document.body.classList.toggle("picking", on);
     if (on) {
-      statusEl.textContent = `Tap anywhere on the map to place ${forCand ? "a place you are considering" : "your destination"}.`;
+      statusEl.textContent = t(forCand ? "pick.status.cand" : "pick.status.dest");
       if (isPhone()) setCollapsed(true);
     }
   }
 
   // ---- Shortlist: places you are considering, each with its commute ---------------------------------
   const bandDot = (minutes: number) => `<i style="background:${BAND_COLORS[bandOf(minutes)]}"></i>`;
-  const minutesLabel = (m: number) => (Number.isFinite(m) ? `${Math.round(m)} min` : "no route");
+  const minutesLabel = (m: number) => (Number.isFinite(m) ? t("min", { n: Math.round(m) }) : t("no.route"));
 
   function renderCandidates() {
     candMarkers.forEach((m) => m.remove());
@@ -360,7 +367,7 @@ async function start() {
           `<li class="cand"><span class="cand-n">${k + 1}</span>` +
           `<span class="cand-main"><span class="cand-name" title="${escapeHtml(c.label)}">${escapeHtml(c.label)}</span>${detail}</span>` +
           `<span class="cand-total">${bandDot(total)}${minutesLabel(total)}</span>` +
-          `<button type="button" class="cand-remove" data-remove="${k}" aria-label="Remove ${escapeHtml(c.label)}">×</button></li>`
+          `<button type="button" class="cand-remove" data-remove="${k}" aria-label="${escapeHtml(t("cand.remove.aria", { name: c.label }))}">×</button></li>`
         );
       })
       .join("");
@@ -390,7 +397,7 @@ async function start() {
 
   function addCandidate(c: Candidate) {
     if (candidates.length >= MAX_CANDIDATES) {
-      statusEl.textContent = `You can compare up to ${MAX_CANDIDATES} places. Remove one to add another.`;
+      statusEl.textContent = t("cand.max", { n: MAX_CANDIDATES });
       return;
     }
     candidates.push({ ...c, label: c.label.replace(/[,|]/g, " ").slice(0, 60) });
@@ -411,17 +418,17 @@ async function start() {
       .filter((r) => Number.isFinite(r.minutes) && r.minutes > 3)
       .sort((a, b) => a.minutes - b.minutes)
       .slice(0, 8);
-    const dir = reverse ? "from" : "to";
+    const dir = t(reverse ? "dir.from.word" : "dir.to.word");
     el("rank-note").textContent =
       used.length === 2
-        ? `Minutes ${measure === "average" ? "(average trip)" : "(the longer trip)"} ${dir} both destinations, from the station itself. Add a few minutes for the walk or ride to it.`
-        : `Minutes ${dir} your destination, from the station itself. Add a few minutes for the walk or ride to it.`;
+        ? t("rank.note.two", { measure: t(measure === "average" ? "rank.measure.average" : "rank.measure.worst"), dir })
+        : t("rank.note.one", { dir });
     list.innerHTML = rows
       .map(
         (r) =>
           `<li><button type="button" class="rank" data-station="${r.i}"><span class="rank-name">${escapeHtml(r.s.name)}</span>` +
           `<span class="rank-lines">${escapeHtml(r.s.lines.slice(0, 3).join(" · "))}</span>` +
-          `<span class="rank-total">${bandDot(r.minutes)}${Math.round(r.minutes)} min</span></button></li>`,
+          `<span class="rank-total">${bandDot(r.minutes)}${t("min", { n: Math.round(r.minutes) })}</span></button></li>`,
       )
       .join("");
     list.querySelectorAll<HTMLButtonElement>(".rank").forEach((b) => {
@@ -438,14 +445,12 @@ async function start() {
     if (!meta) return;
     const today = new Date().toISOString().slice(0, 10).replaceAll("-", "");
     const expired = Object.values(meta.feeds).some((f) => f.valid_to && f.valid_to < today);
-    let text = `Timetable data built ${prettyDate(meta.built)}.`;
-    if (expired) text += " Part of this timetable has expired, so some times may be out of date.";
+    let text = t("data.built", { date: prettyDate(meta.built) });
+    if (expired) text += ` ${t("data.expired")}`;
     if (access.id === "bus") {
       const f = meta.feeds.feeder?.valid_to;
       const c = meta.feeds.city?.valid_to;
-      text +=
-        " Bus routes change often: Rapid KL has been converting low-use routes to on-demand service (19 in January 2026, 10 more in February), and on-demand service is not modelled." +
-        (f && c ? ` Feeder bus timetable valid to ${prettyDate(f)}, city buses to ${prettyDate(c)}.` : "");
+      text += ` ${t("data.bus")}` + (f && c ? ` ${t("data.bus.valid", { f: prettyDate(f), c: prettyDate(c) })}` : "");
     }
     el("data-info").textContent = text;
   }
@@ -466,6 +471,7 @@ async function start() {
       p.set("m", "avg");
       p.set("w", weights.join(","));
     }
+    if (lang !== "en") p.set("lang", lang);
     if (candidates.length) p.set("h", candidates.map((c) => `${c.lat.toFixed(5)},${c.lng.toFixed(5)},${c.label}`).join("|"));
     history.replaceState(null, "", `#${p.toString().replaceAll("%2C", ",")}`);
   }
@@ -479,11 +485,7 @@ async function start() {
     el("access").style.setProperty("--i", String(["walk", "bus", "ride"].indexOf(access.id)));
     renderDataInfo();
     el("access-note").textContent =
-      access.id === "walk"
-        ? "Stations within a 1.5 km walk, at 4.5 km/h."
-        : access.id === "bus"
-          ? "A walk of up to 1.5 km to a station, or up to 500 m to a Rapid KL bus stop (feeder or city route) with a bus to one, changing buses if that is quicker. Includes the wait for each bus."
-          : "Walk to stations up to 1.5 km away; beyond that, a bike, scooter or e-hailed car up to 4 km at about 20 km/h, plus 4 minutes to get going.";
+      t(access.id === "walk" ? "access.note.walk" : access.id === "bus" ? "access.note.bus" : "access.note.ride");
   }
 
   function showWhen() {
@@ -497,9 +499,7 @@ async function start() {
     };
     sync("when", "when", when, ["am", "pm", "sat", "sun"].indexOf(when));
     sync("dir", "dir", reverse ? "from" : "to", reverse ? 1 : 0);
-    el("when-note").textContent = reverse
-      ? `${WHEN[when].hours}. Shows how long the trip takes from your destination to each area, for example the trip home.`
-      : `${WHEN[when].hours}. Pick "coming back" to see the trip home instead.`;
+    el("when-note").textContent = t(reverse ? "when.note.from" : "when.note.to", { hours: WHEN[when].hours });
   }
 
   async function setWhen(nextWhen: When, nextReverse: boolean) {
@@ -536,13 +536,11 @@ async function start() {
     });
     el("slots").style.setProperty("--i", String(slot));
     const second = el<HTMLButtonElement>("slots").querySelector<HTMLButtonElement>("button[data-slot='1']")!;
-    second.textContent = dests[1] ? "Destination B" : "Add a second (B)";
+    second.textContent = t(dests[1] ? "slot.b" : "slot.b.add");
     const d = dests[slot];
     el("slot-note").textContent = d
-      ? `Choosing destination ${slotName(slot)}: ${d.label}. Search, tap a quick pick, pick a spot or drag its pin to change it.`
-      : slot === 1
-        ? "Choose a second place you need to get to. The map then shows the longer of the two commutes."
-        : "Search, tap a quick pick or pick a spot on the map.";
+      ? t("slot.note.set", { slot: slotName(slot), label: d.label })
+      : t(slot === 1 ? "slot.note.b" : "slot.note.a");
     el("remove-b").hidden = !(slot === 1 && dests[1]);
   }
 
@@ -560,9 +558,7 @@ async function start() {
     el<HTMLInputElement>("weight-a").value = String(weights[0]);
     el<HTMLInputElement>("weight-b").value = String(weights[1]);
     el("measure-note").textContent =
-      measure === "worst"
-        ? "Each area is shaded by whichever trip takes longer, so a colour means both trips are at least that good."
-        : "Each area is shaded by the average trip, counting each destination by how often you go. Set a weight to 0 to ignore it.";
+      t(measure === "worst" ? "measure.note.worst" : "measure.note.average");
   }
 
   function setSlot(next: number) {
@@ -572,7 +568,7 @@ async function start() {
     document.querySelectorAll<HTMLButtonElement>("#chips button").forEach((b) => {
       b.classList.toggle("on", b.dataset.chip === dests[slot]?.chip);
     });
-    if (slot === 1 && !dests[1]) statusEl.textContent = "Now choose destination B: search, tap a quick pick or pick a spot on the map.";
+    if (slot === 1 && !dests[1]) statusEl.textContent = t("slot.status.b");
   }
 
   async function update() {
@@ -596,20 +592,18 @@ async function start() {
         return;
       }
       markers[i].setLngLat([d.lng, d.lat]).addTo(map);
-      markers[i].getElement().querySelector(".pin-label")!.textContent = compare ? `${slotName(i)}: ${shortLabel(d.label)}` : "Destination";
+      markers[i].getElement().querySelector(".pin-label")!.textContent = compare ? `${slotName(i)}: ${shortLabel(d.label)}` : t("pin.label");
     });
-    const names = dests.filter((d): d is Destination => d !== null).map((d) => d.label).join(" and ");
-    const dir = reverse ? "from" : "to";
-    summaryEl.textContent = compare
-      ? `${measure === "average" ? "Average commute" : "Slower commute"} ${dir} ${names}, ${WHEN[when].label}`
-      : `Train time ${dir} ${names}, ${WHEN[when].label}`;
+    const names = dests.filter((d): d is Destination => d !== null).map((d) => d.label).join(` ${t("names.and")} `);
+    const dir = t(reverse ? "dir.from.word" : "dir.to.word");
+    summaryEl.textContent = t(compare ? (measure === "average" ? "sum.average" : "sum.worst") : "sum.single", {
+      dir,
+      names,
+      when: WHEN[when].label,
+    });
     el("legend-title").textContent = compare
-      ? measure === "average"
-        ? `The average of the two trips, weighted by trips a week, ${dir} ${names}:`
-        : `The longer of the two trips, ${dir} ${names}:`
-      : reverse
-        ? `Time from ${names} to each area:`
-        : `Time from each area to ${names}:`;
+      ? t(measure === "average" ? "legend.average" : "legend.worst", { dir, names })
+      : t(reverse ? "legend.from" : "legend.to", { names });
     showSlots();
     showMeasure();
     document.querySelectorAll<HTMLButtonElement>("#chips button").forEach((b) => {
@@ -618,10 +612,8 @@ async function start() {
     peekEl.textContent = PEEK_TIP;
     const stranded = dests.flatMap((d, i) => (d && !results[i]!.destStations.length ? [slotName(i)] : []));
     statusEl.textContent = stranded.length
-      ? `No station within ${access.reach} of destination ${stranded.join(" or ")}, so nothing is reachable by train from it. Try somewhere closer to a station.`
-      : compare
-        ? "Tap a coloured area to see both trips from there."
-        : "Tap a coloured area to see how you would get there.";
+      ? t("status.stranded", { reach: t(`reach.${access.id}` as Key), which: stranded.join(` ${t("or")} `) })
+      : t(compare ? "status.tap.two" : "status.tap.one");
     renderCandidates();
     renderRanking();
     writeHash();
@@ -652,8 +644,9 @@ async function start() {
     // Going there, the place's own leg gets you onto the train and the destination's gets you off; coming back, the reverse.
     const busWords = (route: string | undefined, boarding: boolean) => {
       if (!route) return undefined;
-      const buses = route.includes(" > ") ? `buses ${route.replaceAll(" > ", ", then ")}` : `bus ${route}`;
-      return boarding ? `Walk, then ${buses}` : `${buses[0].toUpperCase()}${buses.slice(1)}, then walk`;
+      const many = route.includes(" > ");
+      const r = route.replaceAll(" > ", t("bus.sep"));
+      return t(boarding ? (many ? "bus.board.many" : "bus.board.one") : many ? "bus.alight.many" : "bus.alight.one", { r });
     };
     const hexVia = busWords(reverse ? (hexLeg.viaBack ?? hexLeg.via) : hexLeg.via, !reverse);
     const destVia = busWords(destLeg.via, reverse);
@@ -667,10 +660,10 @@ async function start() {
       route,
       stationName: (k) => stations[k].name,
       walkToDestination: reverse
-        ? { name: "this spot", minutes: walkIn, via: hexVia }
+        ? { name: t("trip.here"), minutes: walkIn, via: hexVia }
         : { name: dest.label, minutes: walkOut, via: destVia },
       total: time,
-      verb: access.verb,
+      verb: t(access.id === "ride" ? "verb.ride" : "verb.walk"),
     });
     return { html, time };
   }
@@ -679,38 +672,38 @@ async function start() {
     const used = [0, 1].filter((i) => dests[i] && results[i]);
     if (!used.length) return;
     const trips = await Promise.all(used.map((i) => tripFor(i, hexIdx)));
-    const phrase = (i: number) => (reverse ? `from ${escapeHtml(dests[i]!.label)} to here` : `from here to ${escapeHtml(dests[i]!.label)}`);
+    const phrase = (i: number) => t(reverse ? "trip.from" : "trip.to", { label: escapeHtml(dests[i]!.label) });
     let body: string;
     if (used.length === 1) {
-      const t = trips[0];
-      body = t
-        ? `<strong>${Math.round(t.time)} min ${phrase(used[0])}</strong>${t.html}`
-        : "<strong>No route</strong><br>Not reachable by train from here.";
+      const trip = trips[0];
+      body = trip
+        ? `<strong>${t("min", { n: Math.round(trip.time) })} ${phrase(used[0])}</strong>${trip.html}`
+        : `<strong>${t("trip.noroute")}</strong><br>${t("trip.noroute.body")}`;
     } else {
-      const times = trips.map((t) => t?.time ?? Infinity);
+      const times = trips.map((trip) => trip?.time ?? Infinity);
       const worst = Math.max(...times);
       const w = weights.every((x) => x <= 0) ? [1, 1] : weights;
       const average = used.reduce((sum, i, k) => (w[i] > 0 ? sum + w[i] * times[k] : sum), 0) / used.reduce((sum, i) => sum + Math.max(0, w[i]), 0);
       const headline = measure === "average" ? average : worst;
       body = Number.isFinite(headline)
-        ? `<strong>${Math.round(headline)} min ${measure === "average" ? "on average per trip" : "for the slower trip"}</strong>`
-        : "<strong>No route</strong> to one of the destinations from here.";
+        ? `<strong>${t(measure === "average" ? "trip.average" : "trip.slower", { n: Math.round(headline) })}</strong>`
+        : `<strong>${t("trip.noroute")}</strong> ${t("trip.noroute.one")}`;
       body += used
         .map((i, k) => {
-          const t = trips[k];
+          const trip = trips[k];
           const badge = `<span class="slot-badge" style="background:${PIN_COLORS[i]}">${slotName(i)}</span>`;
-          return t
-            ? `<div class="trip-head">${badge}${Math.round(t.time)} min ${phrase(i)}</div>${t.html}`
-            : `<div class="trip-head">${badge}${phrase(i)}</div><p class="small">Not reachable by train from here.</p>`;
+          return trip
+            ? `<div class="trip-head">${badge}${t("min", { n: Math.round(trip.time) })} ${phrase(i)}</div>${trip.html}`
+            : `<div class="trip-head">${badge}${phrase(i)}</div><p class="small">${t("trip.noroute.body")}</p>`;
         })
         .join("");
     }
-    const target = dests[1] || slot === 1 ? ` as destination ${slotName(slot)}` : " as my destination";
+    const useLabel = dests[1] || slot === 1 ? t("popup.use.slot", { slot: slotName(slot) }) : t("popup.use.my");
     breakdownPopup
       .setLngLat(at)
       .setHTML(
-        `${body}<div class="popup-note">${WHEN[when].hours}. Walks and rides to stations are straight-line estimates; waits are half the average gap between trains.</div>` +
-          `<div class="popup-actions"><button type="button" id="set-dest">Use this spot${target}</button></div>`,
+        `${body}<div class="popup-note">${t("popup.note", { hours: WHEN[when].hours })}</div>` +
+          `<div class="popup-actions"><button type="button" id="set-dest">${useLabel}</button></div>`,
       )
       .addTo(map);
     breakdownPopup.getElement()?.querySelector<HTMLButtonElement>("#set-dest")?.addEventListener("click", () => {
@@ -741,8 +734,7 @@ async function start() {
     if (idx !== undefined) {
       void showBreakdown(idx, e.lngLat);
     } else {
-      statusEl.textContent =
-        'Tap a coloured area for its trip. To move your destination, search, use a quick pick, or choose "pick a spot on the map".';
+      statusEl.textContent = t("status.nohit");
       if (isPhone()) setCollapsed(false);
     }
   });
@@ -753,18 +745,18 @@ async function start() {
     const input = el<HTMLInputElement>("cand-input");
     const q = input.value.trim();
     if (!q) return;
-    statusEl.textContent = "Searching…";
+    statusEl.textContent = t("status.searching");
     try {
       const hit = await geocode(q);
       if (!hit) {
-        statusEl.textContent = `No match for "${q}" in the Klang Valley. Try a nearby landmark or station name.`;
+        statusEl.textContent = t("status.nomatch", { q });
         return;
       }
       addCandidate(hit);
       input.value = "";
-      statusEl.textContent = `Added ${hit.label}.`;
+      statusEl.textContent = t("cand.added", { label: hit.label });
     } catch {
-      statusEl.textContent = "Search is unavailable right now. Tap the map to add a place instead.";
+      statusEl.textContent = t("cand.down");
     }
   });
   document.querySelectorAll<HTMLButtonElement>("#slots button").forEach((b) => {
@@ -864,17 +856,17 @@ async function start() {
     ev.preventDefault();
     const q = el<HTMLInputElement>("search-input").value.trim();
     if (!q) return;
-    statusEl.textContent = "Searching…";
+    statusEl.textContent = t("status.searching");
     try {
       const hit = await geocode(q);
       if (!hit) {
-        statusEl.textContent = `No match for "${q}" in the Klang Valley. Try a nearby landmark or station name.`;
+        statusEl.textContent = t("status.nomatch", { q });
         return;
       }
       map.flyTo({ center: [hit.lng, hit.lat], zoom: Math.max(map.getZoom(), 12) });
       await setDestination(hit);
     } catch {
-      statusEl.textContent = "Search is unavailable right now. Use a quick pick or tap the map instead.";
+      statusEl.textContent = t("status.searchdown");
     }
   });
 
@@ -894,11 +886,11 @@ async function start() {
     const btn = el("share");
     try {
       await navigator.clipboard.writeText(location.href);
-      btn.textContent = "Link copied";
+      btn.textContent = t("share.done");
     } catch {
-      statusEl.textContent = "Copy the address from your browser's address bar to share this map.";
+      statusEl.textContent = t("share.fail");
     }
-    setTimeout(() => (btn.textContent = "Copy a link to this map"), 1800);
+    setTimeout(() => (btn.textContent = t("share.button")), 1800);
   });
 
   // "Data as of": when the timetable was built, and a warning if a feed has expired.
@@ -958,13 +950,13 @@ async function start() {
       try {
         await netView.enter();
       } catch (err) {
-        statusEl.textContent = "Could not load the train timetable. Try again later.";
+        statusEl.textContent = t("net.err");
         console.error(err);
       }
     } else {
       netView.leave();
       map.setLayoutProperty("hex-fill", "visibility", "visible");
-      summaryEl.textContent = "Loading…";
+      summaryEl.textContent = t("app.loading");
       await update();
     }
   }
@@ -1007,12 +999,12 @@ async function start() {
   setCollapsed(isPhone());
   start?.blur();
   peekEl.textContent = PEEK_EXAMPLE;
-  statusEl.textContent = "This is an example. Change the destination in step 1 to see your own commute.";
+  statusEl.textContent = t("status.example");
   noteFallback();
 }
 
 start().catch((err) => {
-  summaryEl.textContent = "Something went wrong";
-  statusEl.textContent = `Failed to start: ${err.message}`;
+  summaryEl.textContent = t("err.title");
+  statusEl.textContent = t("err.start", { msg: err.message });
   console.error(err);
 });

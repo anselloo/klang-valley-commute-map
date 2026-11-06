@@ -14,150 +14,152 @@
   <body data-mode="commute" data-basemap="map">
     <div id="map"></div>
 
-    <div id="basemap" class="seg glass" role="group" aria-label="Map type">
+    <div id="basemap" class="seg glass" role="group" aria-label="Map type" data-i18n-label="basemap.aria">
       <span class="thumb" aria-hidden="true"></span>
-      <button type="button" data-basemap="map" class="on" aria-pressed="true">Map</button>
-      <button type="button" data-basemap="satellite" aria-pressed="false">Satellite</button>
+      <button type="button" data-basemap="map" class="on" aria-pressed="true" data-i18n="basemap.map">Map</button>
+      <button type="button" data-basemap="satellite" aria-pressed="false" data-i18n="basemap.satellite">Satellite</button>
     </div>
 
-    <aside id="panel" class="glass" aria-label="Controls">
-      <button type="button" id="grabber" aria-label="Expand or collapse the panel"><span></span></button>
+    <aside id="panel" class="glass" aria-label="Controls" data-i18n-label="panel.aria">
+      <button type="button" id="grabber" aria-label="Expand or collapse the panel" data-i18n-label="grabber.aria"><span></span></button>
       <header id="panel-head">
         <div id="head-text">
-          <h1>Where can I live?</h1>
-          <p id="summary">Loading…</p>
+          <h1 data-i18n="app.title">Where can I live?</h1>
+          <p id="summary" data-i18n="app.loading">Loading…</p>
           <ul id="mini-legend" aria-hidden="true"></ul>
           <p id="peek"></p>
         </div>
         <div id="head-buttons">
           <button type="button" id="head-play" class="round" aria-label="Pause trains" hidden></button>
-          <button type="button" id="collapse" class="pill" aria-expanded="true" aria-controls="panel-body">Hide</button>
+          <button type="button" id="lang-toggle" class="pill" lang="ms" title="Bahasa Melayu">BM</button>
+          <button type="button" id="collapse" class="pill" aria-expanded="true" aria-controls="panel-body" data-i18n="collapse.hide">Hide</button>
         </div>
       </header>
 
-      <div id="modes" class="seg" role="tablist" aria-label="View">
+      <div id="modes" class="seg" role="tablist" aria-label="View" data-i18n-label="modes.aria">
         <span class="thumb" aria-hidden="true"></span>
-        <button type="button" role="tab" data-mode="commute" class="on" aria-selected="true">Commute map</button>
-        <button type="button" role="tab" data-mode="network" aria-selected="false">Train network</button>
+        <button type="button" role="tab" data-mode="commute" class="on" aria-selected="true" data-i18n="modes.commute">Commute map</button>
+        <button type="button" role="tab" data-mode="network" aria-selected="false" data-i18n="modes.network">Train network</button>
       </div>
 
       <div id="panel-body">
         <div id="mode-commute">
-          <p id="lede">
+          <p id="lede" data-i18n="lede">
             Pick where you work or study. The map colours every area by how long the train
             journey to it takes, door to door.
           </p>
 
           <section>
-            <h2><span class="n">1</span> Where do you work or study?</h2>
-            <div id="slots" class="seg" role="group" aria-label="Which destination you are choosing">
+            <h2><span class="n">1</span> <span data-i18n="s1.title">Where do you work or study?</span></h2>
+            <div id="slots" class="seg" role="group" aria-label="Which destination you are choosing" data-i18n-label="slots.aria">
               <span class="thumb" aria-hidden="true"></span>
-              <button type="button" data-slot="0" class="on" aria-pressed="true">Destination A</button>
-              <button type="button" data-slot="1" aria-pressed="false">Add a second (B)</button>
+              <button type="button" data-slot="0" class="on" aria-pressed="true" data-i18n="slot.a">Destination A</button>
+              <button type="button" data-slot="1" aria-pressed="false" data-i18n="slot.b.add">Add a second (B)</button>
             </div>
             <p class="small" id="slot-note"></p>
-            <button type="button" id="remove-b" class="pill" hidden>Remove destination B</button>
+            <button type="button" id="remove-b" class="pill" hidden data-i18n="remove.b">Remove destination B</button>
             <div id="measure-box" hidden>
-              <div id="measure" class="seg" role="group" aria-label="How to combine the two trips">
+              <div id="measure" class="seg" role="group" aria-label="How to combine the two trips" data-i18n-label="measure.aria">
                 <span class="thumb" aria-hidden="true"></span>
-                <button type="button" data-measure="worst" class="on" aria-pressed="true">Longer trip</button>
-                <button type="button" data-measure="average" aria-pressed="false">Average trip</button>
+                <button type="button" data-measure="worst" class="on" aria-pressed="true" data-i18n="measure.worst">Longer trip</button>
+                <button type="button" data-measure="average" aria-pressed="false" data-i18n="measure.average">Average trip</button>
               </div>
               <p class="small" id="measure-note"></p>
               <div id="weights" hidden>
-                <label class="weight"><span class="slot-badge" style="background:#c0392b">A</span><span class="weight-text">trips a week</span>
+                <label class="weight"><span class="slot-badge" style="background:#c0392b">A</span><span class="weight-text" data-i18n="weights.text">trips a week</span>
                   <input type="number" id="weight-a" min="0" max="14" step="1" value="5" inputmode="numeric" /></label>
-                <label class="weight"><span class="slot-badge" style="background:#6c3fc5">B</span><span class="weight-text">trips a week</span>
+                <label class="weight"><span class="slot-badge" style="background:#6c3fc5">B</span><span class="weight-text" data-i18n="weights.text">trips a week</span>
                   <input type="number" id="weight-b" min="0" max="14" step="1" value="5" inputmode="numeric" /></label>
               </div>
             </div>
             <form id="search" autocomplete="off">
               <label class="field">
                 <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                <input id="search-input" type="search" placeholder="Search a place or address" aria-label="Search for a place or address" />
+                <input id="search-input" type="search" placeholder="Search a place or address" aria-label="Search for a place or address" data-i18n-ph="search.placeholder" data-i18n-label="search.aria" />
               </label>
-              <button type="submit" class="pill tint">Search</button>
+              <button type="submit" class="pill tint" data-i18n="search.button">Search</button>
             </form>
-            <div id="chips" aria-label="Quick picks"></div>
-            <button type="button" id="pick" class="btn wide">Or pick a spot on the map</button>
+            <div id="chips" aria-label="Quick picks" data-i18n-label="chips.aria"></div>
+            <button type="button" id="pick" class="btn wide" data-i18n="pick.default">Or pick a spot on the map</button>
           </section>
 
           <section>
-            <h2><span class="n">2</span> How do you get to a station?</h2>
-            <div id="access" class="seg" role="group" aria-label="How you get to a station">
+            <h2><span class="n">2</span> <span data-i18n="s2.title">How do you get to a station?</span></h2>
+            <div id="access" class="seg" role="group" aria-label="How you get to a station" data-i18n-label="access.aria">
               <span class="thumb" aria-hidden="true"></span>
-              <button type="button" data-access="walk" class="on" aria-pressed="true">Walk</button>
-              <button type="button" data-access="bus" aria-pressed="false">Bus</button>
-              <button type="button" data-access="ride" aria-pressed="false">Bike or e-hail</button>
+              <button type="button" data-access="walk" class="on" aria-pressed="true" data-i18n="access.walk">Walk</button>
+              <button type="button" data-access="bus" aria-pressed="false" data-i18n="access.bus">Bus</button>
+              <button type="button" data-access="ride" aria-pressed="false" data-i18n="access.ride">Bike or e-hail</button>
             </div>
-            <p class="small" id="access-note">Stations within a 1.5 km walk, at 4.5 km/h.</p>
+            <p class="small" id="access-note"></p>
           </section>
 
           <section>
-            <h2><span class="n">3</span> When, and which way?</h2>
-            <div id="when" class="seg" role="group" aria-label="When you travel">
+            <h2><span class="n">3</span> <span data-i18n="s3.title">When, and which way?</span></h2>
+            <div id="when" class="seg" role="group" aria-label="When you travel" data-i18n-label="when.aria">
               <span class="thumb" aria-hidden="true"></span>
-              <button type="button" data-when="am" class="on" aria-pressed="true">Morning</button>
-              <button type="button" data-when="pm" aria-pressed="false">Evening</button>
-              <button type="button" data-when="sat" aria-pressed="false">Sat</button>
-              <button type="button" data-when="sun" aria-pressed="false">Sun</button>
+              <button type="button" data-when="am" class="on" aria-pressed="true" data-i18n="when.am">Morning</button>
+              <button type="button" data-when="pm" aria-pressed="false" data-i18n="when.pm">Evening</button>
+              <button type="button" data-when="sat" aria-pressed="false" data-i18n="when.sat">Sat</button>
+              <button type="button" data-when="sun" aria-pressed="false" data-i18n="when.sun">Sun</button>
             </div>
-            <div id="dir" class="seg" role="group" aria-label="Direction of travel">
+            <div id="dir" class="seg" role="group" aria-label="Direction of travel" data-i18n-label="dir.aria">
               <span class="thumb" aria-hidden="true"></span>
-              <button type="button" data-dir="to" class="on" aria-pressed="true">Going there</button>
-              <button type="button" data-dir="from" aria-pressed="false">Coming back</button>
+              <button type="button" data-dir="to" class="on" aria-pressed="true" data-i18n="dir.to">Going there</button>
+              <button type="button" data-dir="from" aria-pressed="false" data-i18n="dir.from">Coming back</button>
             </div>
-            <p class="small" id="when-note">Weekday morning, trains from 7 to 9 am. Pick evening and "coming back" for the trip home.</p>
+            <p class="small" id="when-note"></p>
           </section>
 
           <section>
-            <h2><span class="n">4</span> Read the map</h2>
-            <p class="small" id="legend-title">Time from each area to your destination:</p>
+            <h2><span class="n">4</span> <span data-i18n="s4.title">Read the map</span></h2>
+            <p class="small" id="legend-title" data-i18n="legend.default">Time from each area to your destination:</p>
             <ul id="legend"></ul>
-            <p class="small">
+            <p class="small" data-i18n-html="s4.tap">
               <strong>Tap a coloured area</strong> to see the trip: walk, train, changes.
               Uncoloured areas have no station within reach.
             </p>
-            <button type="button" id="share" class="btn wide">Copy a link to this map</button>
+            <button type="button" id="share" class="btn wide" data-i18n="share.button">Copy a link to this map</button>
           </section>
 
           <section id="shortlist">
-            <h2><span class="n">5</span> Compare places you are considering</h2>
-            <p class="small">Add a few addresses or spots to see each one's commute at a glance. They are saved in the link.</p>
+            <h2><span class="n">5</span> <span data-i18n="s5.title">Compare places you are considering</span></h2>
+            <p class="small" data-i18n="s5.note">Add a few addresses or spots to see each one's commute at a glance. They are saved in the link.</p>
             <form id="cand-form" autocomplete="off">
               <label class="field">
                 <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                <input id="cand-input" type="search" placeholder="Add an address or place" aria-label="Add a place you are considering" />
+                <input id="cand-input" type="search" placeholder="Add an address or place" aria-label="Add a place you are considering" data-i18n-ph="cand.placeholder" data-i18n-label="cand.aria" />
               </label>
-              <button type="submit" class="pill tint">Add</button>
+              <button type="submit" class="pill tint" data-i18n="cand.add">Add</button>
             </form>
-            <button type="button" id="cand-pick" class="btn wide">Or tap the map to add one</button>
-            <ol id="cand-list" aria-label="Places you are considering"></ol>
+            <button type="button" id="cand-pick" class="btn wide" data-i18n="cand.pick">Or tap the map to add one</button>
+            <ol id="cand-list" aria-label="Places you are considering" data-i18n-label="cand.list.aria"></ol>
           </section>
 
           <section id="ranking">
-            <h2><span class="n">6</span> Best stations to live near</h2>
+            <h2><span class="n">6</span> <span data-i18n="s6.title">Best stations to live near</span></h2>
             <p class="small" id="rank-note"></p>
             <ol id="rank-list"></ol>
           </section>
 
           <details>
-            <summary>How is this calculated?</summary>
-            <p class="small">
-              Train times come from the official LRT, MRT, Monorail, BRT and KTM Komuter
-              timetables. Waiting is half the average gap between trains, each change adds
-              5 minutes, and walking is estimated at 4.5 km/h along a route 60% longer than the straight line.
-              Buses and e-hailing are not included, so treat results as a guide.
+            <summary data-i18n="calc.summary">How is this calculated?</summary>
+            <p class="small" data-i18n="calc.body">
+              Train times come from the official LRT, MRT, Monorail, BRT, KTM Komuter and KLIA
+              Ekspres/Transit timetables. Waiting is half the average gap between trains (at most 20
+              minutes), each change adds 5 minutes, and walking is estimated at 4.5 km/h along a route
+              60% longer than the straight line. Rapid KL buses can get you to a station if you choose
+              Bus. Treat results as a guide, not a journey planner.
             </p>
           </details>
         </div>
 
         <div id="mode-network" hidden>
-          <p id="net-lede">
+          <p id="net-lede" data-i18n="net.lede">
             Every train on the weekday timetable, moving along its line. Tap a train to follow
             it, or a station to see what leaves next.
           </p>
-          <p class="small" id="net-note">
+          <p class="small" id="net-note" data-i18n="net.note">
             Simulated from the published timetable, not live positions. Prasarana trains are
             spaced by the timetable's average gap, so a real train can be a few minutes off.
           </p>
@@ -167,31 +169,31 @@
               <span id="net-time">07:30</span>
               <span id="net-count"></span>
             </div>
-            <input id="net-slider" type="range" min="18000" max="90000" step="60" value="27000" aria-label="Time of day" />
+            <input id="net-slider" type="range" min="18000" max="90000" step="60" value="27000" aria-label="Time of day" data-i18n-label="net.slider.aria" />
             <div id="net-controls">
               <button type="button" id="net-play" class="btn" aria-label="Pause trains"></button>
-              <div id="net-speed" class="seg" role="group" aria-label="Playback speed">
+              <div id="net-speed" class="seg" role="group" aria-label="Playback speed" data-i18n-label="net.speed.aria">
                 <span class="thumb" aria-hidden="true"></span>
                 <button type="button" data-speed="10">10×</button>
                 <button type="button" data-speed="60" class="on">60×</button>
                 <button type="button" data-speed="300">300×</button>
               </div>
             </div>
-            <div id="net-jumps" aria-label="Jump to a time of day">
-              <button type="button" data-time="27000">Morning peak</button>
-              <button type="button" data-time="43200">Midday</button>
-              <button type="button" data-time="64800">Evening peak</button>
-              <button type="button" data-time="81000">Late</button>
-              <button type="button" id="net-now">Now</button>
+            <div id="net-jumps" aria-label="Jump to a time of day" data-i18n-label="net.jumps.aria">
+              <button type="button" data-time="27000" data-i18n="net.jump.am">Morning peak</button>
+              <button type="button" data-time="43200" data-i18n="net.jump.mid">Midday</button>
+              <button type="button" data-time="64800" data-i18n="net.jump.pm">Evening peak</button>
+              <button type="button" data-time="81000" data-i18n="net.jump.late">Late</button>
+              <button type="button" id="net-now" data-i18n="net.jump.now">Now</button>
             </div>
           </section>
 
           <section id="net-card" aria-live="polite"></section>
 
           <section>
-            <h2>Lines</h2>
+            <h2 data-i18n="net.lines">Lines</h2>
             <ul id="net-lines"></ul>
-            <p class="small">Tap a line to focus on it, tap it again to show everything.</p>
+            <p class="small" data-i18n="net.lines.tip">Tap a line to focus on it, tap it again to show everything.</p>
           </section>
         </div>
 

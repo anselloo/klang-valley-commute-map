@@ -273,6 +273,39 @@ await sharedList.waitForTimeout(2500);
 ok("the bus option shows the feed freshness note", /valid to/.test(await sharedList.evaluate(() => document.getElementById("data-info").innerText)));
 await sharedList.close();
 
+// Language: Bahasa Melayu, from the switch and from a shared link, and back again.
+const lang = await browser.newPage({ viewport: { width: 1200, height: 800 } });
+await lang.goto(base + "?debug", { waitUntil: "load" });
+await lang.waitForTimeout(5000);
+const enTitle = await lang.evaluate(() => document.querySelector("h1").innerText);
+await lang.click("#lang-toggle");
+await lang.waitForLoadState("load");
+await lang.waitForTimeout(5500);
+const msState = await lang.evaluate(() => ({
+  h1: document.querySelector("h1").innerText,
+  summary: document.getElementById("summary").innerText,
+  html: document.documentElement.lang,
+  hash: location.hash,
+  step: document.querySelector("#mode-commute section h2").innerText,
+  toggle: document.getElementById("lang-toggle").innerText,
+}));
+ok("the language switch changes the page to Bahasa Melayu", enTitle === "Where can I live?" && msState.h1 === "Di mana saya boleh tinggal?" && /^Masa kereta api ke /.test(msState.summary) && msState.html === "ms" && /Di mana anda bekerja/.test(msState.step) && msState.toggle === "EN", JSON.stringify(msState));
+ok("the language is in the address", msState.hash.includes("lang=ms"));
+await lang.click("#access button[data-access='bus']");
+await lang.waitForTimeout(2500);
+const msNote = await lang.evaluate(() => document.getElementById("access-note").innerText + " | " + document.getElementById("data-info").innerText);
+ok("Bahasa Melayu covers the bus note and the data note", /perhentian bas/.test(msNote) && /Laluan bas kerap berubah/.test(msNote), msNote.slice(0, 120));
+await lang.click("#lang-toggle");
+await lang.waitForLoadState("load");
+await lang.waitForTimeout(5500);
+ok("the switch goes back to English", (await lang.evaluate(() => document.querySelector("h1").innerText)) === "Where can I live?");
+await lang.close();
+const shared3 = await browser.newPage({ viewport: { width: 1200, height: 800 } });
+await shared3.goto(base + "?debug#to=3.13434,101.6862&name=KL%20Sentral&lang=ms", { waitUntil: "load" });
+await shared3.waitForTimeout(5500);
+ok("a shared link with lang=ms opens in Bahasa Melayu", /^Masa kereta api ke KL Sentral/.test(await shared3.evaluate(() => document.getElementById("summary").innerText)));
+await shared3.close();
+
 // If the base-map style service is down, the app falls back to plain OSM tiles and still works.
 const down = await browser.newPage({ viewport: { width: 1200, height: 800 } });
 await down.route("**/tiles.openfreemap.org/**", (route) => route.abort());

@@ -1,4 +1,5 @@
 import type { Route } from "./graph";
+import { t } from "./i18n";
 
 export interface BreakdownInput {
   walkToStation: { name: string; minutes: number; via?: string };
@@ -14,39 +15,49 @@ export function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-const mins = (m: number) => `${Math.max(1, Math.round(m))} min`;
+const mins = (m: number) => t("min", { n: Math.max(1, Math.round(m)) });
 
 /** One row per step of the door-to-door trip, then the total. */
 export function breakdownHtml(input: BreakdownInput): string {
   const rows: [string, string][] = [];
-  const verb = escapeHtml(input.verb ?? "Walk");
-  rows.push([`${input.walkToStation.via ? escapeHtml(input.walkToStation.via) : verb} to ${escapeHtml(input.walkToStation.name)}`, mins(input.walkToStation.minutes)]);
+  const verb = escapeHtml(input.verb ?? t("verb.walk"));
+  const leg = (l: { name: string; via?: string }) =>
+    t("bd.to", { verb: l.via ? escapeHtml(l.via) : verb, name: escapeHtml(l.name) });
+  rows.push([leg(input.walkToStation), mins(input.walkToStation.minutes)]);
   for (const seg of input.route.segments) {
     if (seg.kind === "wait") {
-      rows.push([`Wait for ${escapeHtml(seg.line)}`, `~${mins(seg.minutes)}`]);
+      rows.push([t("bd.wait", { line: escapeHtml(seg.line) }), `~${mins(seg.minutes)}`]);
     } else if (seg.kind === "ride") {
-      const stops = seg.stops === 1 ? "1 stop" : `${seg.stops} stops`;
+      const stops = seg.stops === 1 ? t("bd.stops.one") : t("bd.stops.many", { n: seg.stops });
       rows.push([
-        `Ride ${escapeHtml(seg.line)}: ${escapeHtml(input.stationName(seg.from))} → ${escapeHtml(input.stationName(seg.to))} (${stops})`,
+        t("bd.ride", {
+          line: escapeHtml(seg.line),
+          from: escapeHtml(input.stationName(seg.from)),
+          to: escapeHtml(input.stationName(seg.to)),
+          stops,
+        }),
         mins(seg.minutes),
       ]);
     } else if (seg.kind === "bus") {
-      const buses = seg.routes.includes(" > ") ? `Buses ${seg.routes.replaceAll(" > ", ", then ")}` : `Bus ${seg.routes}`;
       rows.push([
-        `${escapeHtml(buses)}: ${escapeHtml(input.stationName(seg.from))} → ${escapeHtml(input.stationName(seg.to))}`,
+        t(seg.routes.includes(" > ") ? "bd.bus.many" : "bd.bus.one", {
+          r: escapeHtml(seg.routes.replaceAll(" > ", t("bus.sep"))),
+          from: escapeHtml(input.stationName(seg.from)),
+          to: escapeHtml(input.stationName(seg.to)),
+        }),
         mins(seg.minutes),
       ]);
     } else if (seg.onFoot) {
       rows.push([
-        `Walk between stations: ${escapeHtml(input.stationName(seg.station))} → ${escapeHtml(input.stationName(seg.to))}`,
+        t("bd.walk.between", { from: escapeHtml(input.stationName(seg.station)), to: escapeHtml(input.stationName(seg.to)) }),
         mins(seg.minutes),
       ]);
     } else {
-      rows.push([`Change at ${escapeHtml(input.stationName(seg.station))}`, mins(seg.minutes)]);
+      rows.push([t("bd.change", { station: escapeHtml(input.stationName(seg.station)) }), mins(seg.minutes)]);
     }
   }
-  rows.push([`${input.walkToDestination.via ? escapeHtml(input.walkToDestination.via) : verb} to ${escapeHtml(input.walkToDestination.name)}`, mins(input.walkToDestination.minutes)]);
+  rows.push([leg(input.walkToDestination), mins(input.walkToDestination.minutes)]);
 
   const body = rows.map(([label, time]) => `<tr><td>${label}</td><td class="t">${time}</td></tr>`).join("");
-  return `<table class="breakdown">${body}<tr class="total"><td>Total</td><td class="t">${mins(input.total)}</td></tr></table>`;
+  return `<table class="breakdown">${body}<tr class="total"><td>${t("bd.total")}</td><td class="t">${mins(input.total)}</td></tr></table>`;
 }

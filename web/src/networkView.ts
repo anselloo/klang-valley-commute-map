@@ -1,5 +1,6 @@
 import * as maplibregl from "maplibre-gl";
 import { escapeHtml } from "./breakdown";
+import { lineLabel, modeLabel, t as tr } from "./i18n";
 import { readableText } from "./color";
 import { DAY, formatClock, Network, type NetworkData, type Train } from "./network";
 import type { Station } from "./types";
@@ -23,11 +24,11 @@ const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as
 /** Short code for a line's badge: the line's own name when short (KJL), otherwise "KTM". */
 const lineCode = (name: string, code?: string) => code ?? (name.length <= 4 ? name : "KTM");
 /** The wording that goes next to the badge when the badge alone does not name the line. */
-const lineSuffix = (name: string) => (name.length <= 4 ? "" : `${escapeHtml(name)} `);
+const lineSuffix = (name: string) => (name.length <= 4 ? "" : `${escapeHtml(lineLabel(name))} `);
 const badge = (name: string, color: string, code?: string) =>
   `<span class="badge" style="background:${color};color:${readableText(color)}">${escapeHtml(lineCode(name, code))}</span>`;
 const minutesText = (seconds: number) =>
-  seconds < 30 ? "now" : seconds < 90 ? "1 min" : `${Math.round(seconds / 60)} min`;
+  seconds < 30 ? tr("net.now") : seconds < 90 ? tr("net.min1") : tr("min", { n: Math.round(seconds / 60) });
 
 /**
  * A round, Apple-Maps-style puck in the line's colour: white ring, soft shadow and a small rounded
@@ -79,8 +80,7 @@ function arrowImage(color: string): ImageData {
   return ctx.getImageData(0, 0, size, size);
 }
 
-const NET_NOTE =
-  "Simulated from the published timetable, not live positions. Prasarana trains are spaced by the timetable's average gap, so a real train can be a few minutes off.";
+const NET_NOTE = tr("net.note");
 
 /** Seconds since midnight in Kuala Lumpur, whatever timezone the visitor's device is in. */
 function malaysiaNow(): { seconds: number; weekend: boolean } {
@@ -304,7 +304,7 @@ export class NetworkView {
     el("net-now").addEventListener("click", () => {
       const { seconds, weekend } = malaysiaNow();
       this.jumpTo(seconds);
-      el("net-note").textContent = weekend ? `${NET_NOTE} It is the weekend in Malaysia, but this shows the weekday timetable.` : NET_NOTE;
+      el("net-note").textContent = weekend ? `${NET_NOTE} ${tr("net.weekend")}` : NET_NOTE;
     });
     this.map.on("dragstart", () => {
       this.following = false;
@@ -313,10 +313,10 @@ export class NetworkView {
 
   private setPlaying(on: boolean) {
     this.playing = on;
-    el("net-play").innerHTML = `${on ? ICON_PAUSE : ICON_PLAY}<span>${on ? "Pause" : "Play"}</span>`;
-    el("net-play").setAttribute("aria-label", on ? "Pause trains" : "Play trains");
+    el("net-play").innerHTML = `${on ? ICON_PAUSE : ICON_PLAY}<span>${on ? tr("net.pause") : tr("net.play")}</span>`;
+    el("net-play").setAttribute("aria-label", on ? tr("net.pause.aria") : tr("net.play.aria"));
     el("head-play").innerHTML = on ? ICON_PAUSE : ICON_PLAY;
-    el("head-play").setAttribute("aria-label", on ? "Pause trains" : "Play trains");
+    el("head-play").setAttribute("aria-label", on ? tr("net.pause.aria") : tr("net.play.aria"));
     this.lastFrame = performance.now();
   }
 
@@ -336,7 +336,7 @@ export class NetworkView {
         (l, i) =>
           `<li><button type="button" class="line-row" data-line="${i}">` +
           badge(l.name, l.color, l.code) +
-          `<span class="line-name">${escapeHtml(l.mode === "KTM Komuter" || l.mode === "Airport rail" ? l.name : l.longName)} <span class="small">${escapeHtml(l.mode)}</span></span>` +
+          `<span class="line-name">${escapeHtml(lineLabel(l.mode === "KTM Komuter" || l.mode === "Airport rail" ? l.name : l.longName))} <span class="small">${escapeHtml(modeLabel(l.mode))}</span></span>` +
           `<span class="line-count" id="line-count-${i}"></span></button></li>`,
       )
       .join("");
@@ -515,8 +515,8 @@ export class NetworkView {
     slider.style.setProperty("--p", `${((this.simTime - START_OF_SERVICE) / (END_OF_SERVICE - START_OF_SERVICE)) * 100}%`);
     const counts = net.countByLine(t);
     const running = counts.reduce((a, b) => a + b, 0);
-    el("net-count").textContent = running ? `${running} trains running` : "No trains running yet";
-    el("summary").textContent = `${formatClock(this.simTime)} · ${running} trains running`;
+    el("net-count").textContent = running ? tr("net.count", { n: running }) : tr("net.count.none");
+    el("summary").textContent = `${formatClock(this.simTime)} · ${tr("net.count", { n: running })}`;
     counts.forEach((n, i) => {
       const c = document.getElementById(`line-count-${i}`);
       if (c) c.textContent = n ? String(n) : "–";
@@ -528,35 +528,37 @@ export class NetworkView {
       el("net-card").innerHTML = html;
       bind();
     }
-    el("peek").textContent = peek || "Tap a train to follow it, or a station for departures.";
+    el("peek").textContent = peek || tr("net.peek");
   }
 
   /** The selection card for the current time, and how to wire up its buttons. */
   private buildCard(t: number): { html: string; bind: () => void; peek: string } {
     const net = this.net!;
-    const none = { html: `<p class="small">Nothing selected. Tap a train or a station on the map.</p>`, bind: () => {}, peek: "" };
+    const none = { html: `<p class="small">${tr("net.card.none")}</p>`, bind: () => {}, peek: "" };
     const followed = this.followTrip !== null ? this.trains.find((x) => x.trip === this.followTrip) : undefined;
     if (this.followTrip !== null && !followed) {
       this.followTrip = null;
       this.following = false;
       this.map.setFilter("net-follow-ring", ["==", ["get", "trip"], -1]);
-      return { html: `<p class="small">That trip has finished its run.</p>`, bind: () => {}, peek: "That trip has finished its run." };
+      return { html: `<p class="small">${tr("net.finished")}</p>`, bind: () => {}, peek: tr("net.finished") };
     }
     if (followed) {
       const line = net.lines[followed.line];
       const stop = this.stations[net.patterns[followed.pattern].stops[followed.nextStop]];
       const dest = this.stations[followed.destination];
       const next = followed.stopped
-        ? `Stopped at <strong>${escapeHtml(stop.name)}</strong>`
-        : `Next: <strong>${escapeHtml(stop.name)}</strong> in ${minutesText(followed.secondsToNext)}`;
+        ? tr("net.stopped", { name: escapeHtml(stop.name) })
+        : tr("net.next", { name: escapeHtml(stop.name), when: minutesText(followed.secondsToNext) });
       return {
-        peek: `${line.name} to ${dest.name}: ${followed.stopped ? `stopped at ${stop.name}` : `next ${stop.name} in ${minutesText(followed.secondsToNext)}`}`,
+        peek: followed.stopped
+          ? tr("net.peek.stopped", { line: line.name, dest: dest.name, name: stop.name })
+          : tr("net.peek.next", { line: line.name, dest: dest.name, name: stop.name, when: minutesText(followed.secondsToNext) }),
         html:
           `<div class="card"><div class="card-title">${badge(line.name, line.color, line.code)}` +
-          `<span>${lineSuffix(line.name)}to ${escapeHtml(dest.name)}</span></div>` +
+          `<span>${lineSuffix(line.name)}${tr("net.to", { name: escapeHtml(dest.name) })}</span></div>` +
           `<p>${next}</p>` +
-          `<div class="card-actions"><button type="button" id="follow-toggle">${this.following ? "Stop following" : "Follow this train"}</button>` +
-          `<button type="button" id="follow-close">Close</button></div></div>`,
+          `<div class="card-actions"><button type="button" id="follow-toggle">${this.following ? tr("net.unfollow") : tr("net.follow")}</button>` +
+          `<button type="button" id="follow-close">${tr("net.close")}</button></div></div>`,
         bind: () => {
           el("follow-toggle").addEventListener("click", () => {
             this.following = !this.following;
@@ -576,20 +578,20 @@ export class NetworkView {
             .map(
               (d) =>
                 `<li>${badge(net.lines[d.line].name, net.lines[d.line].color, net.lines[d.line].code)}` +
-                `<span class="dep-text">${lineSuffix(net.lines[d.line].name)}to ${escapeHtml(this.stations[d.destination].name)}</span>` +
+                `<span class="dep-text">${lineSuffix(net.lines[d.line].name)}${tr("net.to", { name: escapeHtml(this.stations[d.destination].name) })}</span>` +
                 `<span class="dep-time">${minutesText(d.inSeconds)}</span></li>`,
             )
             .join("")
-        : `<li class="small">No departures in the next 40 minutes at this time of day.</li>`;
+        : `<li class="small">${tr("net.deps.none")}</li>`;
       return {
         peek: deps.length
-          ? `${s.name}: ${deps.slice(0, 3).map((d) => `${net.lines[d.line].name} to ${this.stations[d.destination].name} ${minutesText(d.inSeconds)}`).join(", ")}`
-          : `${s.name}: no departures in the next 40 minutes`,
+          ? `${s.name}: ${deps.slice(0, 3).map((d) => `${net.lines[d.line].name} ${tr("net.to", { name: this.stations[d.destination].name })} ${minutesText(d.inSeconds)}`).join(", ")}`
+          : tr("net.peek.nodeps", { name: s.name }),
         html:
           `<div class="card"><div class="card-title"><strong>${escapeHtml(s.name)}</strong></div>` +
-          `<p class="small">Next departures</p><ul class="departures">${rows}</ul>` +
-          `<div class="card-actions"><button type="button" id="station-dest">Use as my destination</button>` +
-          `<button type="button" id="station-close">Close</button></div></div>`,
+          `<p class="small">${tr("net.deps")}</p><ul class="departures">${rows}</ul>` +
+          `<div class="card-actions"><button type="button" id="station-dest">${tr("net.usedest")}</button>` +
+          `<button type="button" id="station-close">${tr("net.close")}</button></div></div>`,
         bind: () => {
           el("station-dest").addEventListener("click", () => this.hooks.useAsDestination(index));
           el("station-close").addEventListener("click", () => this.selectStation(null));

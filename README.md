@@ -19,6 +19,8 @@ The site opens on a worked example (KL Sentral) so you can see what it shows str
 
 The address bar always describes the current destination(s), access mode, time and direction, so **Copy a link to this map** shares exactly what you are looking at. Search looks at station names first (instantly), then Nominatim, then Photon as a backup.
 
+**Bahasa Melayu.** The **BM / EN** button in the panel header switches the whole interface (labels, notes, trip steps, the train view, line names such as "Laluan Ampang"). It follows your browser's language the first time, remembers your choice, and the link carries it (`lang=ms`), so a shared link opens in the sender's language. The Malay text was written by an AI and has not been reviewed by a native speaker: please tell me about anything that reads oddly (`web/src/i18n.ts` holds every string).
+
 A **Map / Satellite** switch (top right) changes the base map without losing your destination or the shading; the choice is remembered. The interface follows your device's light or dark appearance.
 
 ![The same view on satellite imagery](docs/satellite.png)
@@ -98,6 +100,7 @@ SPEC.md      the v1 spec
 
 - **Estimates, not a journey planner.** Waits are half the average headway (capped at 20 minutes), not a real timetable lookup, and walking ignores roads and rivers. The times have **not** yet been compared with Google Maps; [docs/VERIFY.md](docs/VERIFY.md) is the checklist for doing that.
 - **Not in the data:** rents. Malaysia's open data portal has household income and spending by parliamentary constituency (DOSM Household Income and Expenditure Survey) and state-level house price indices, but no rent by area; the rest is paid or scraped listing data (SPEEDHOME, IQI, EdgeProp, PropertyGuru). A made-up or scraped overlay would mislead, so there is none. Also not in the data: operators other than Rapid KL, a trip made wholly by bus, and late-night timetables. Without rents the map answers "how far by train", not "where should I live". KLIA Ekspres / Transit were added by hand from ERL's published schedule (`data/erl.json`); the Transit frequency is the least certain figure.
+- **Malay text unreviewed.** The Bahasa Melayu translation has not been checked by a native speaker, and station and line names (other than "Line" becoming "Laluan") stay as the operators write them.
 - **Buses change fast.** Rapid KL converted 19 low-use routes to on-demand service in January 2026 and 10 more in February ([The Star](https://www.thestar.com.my/metro/metro-news/2026/01/11/rapid-bus-to-restructure-klang-valley-routes-for-better-service)). On-demand service is not modelled, the feeder bus timetable is only valid for a month at a time, and the page shows how long each bus feed is valid when you choose Bus.
 - **Schedules, not reliability.** Delays, breakdowns and crowding (the things commuters complain about most) are not in the data.
 - **Free third-party services.** Search (Nominatim, with Photon as a fallback), the base map (OpenFreeMap, with plain OpenStreetMap tiles as a fallback when its style cannot be fetched, with a notice) and satellite (Esri) are free and come with no guarantee, and heavy traffic could get the site throttled. There is no fallback for satellite imagery.

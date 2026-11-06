@@ -157,19 +157,26 @@ From a second look at the whole app and at what commuters say (news coverage of 
 - **Best stations to live near.** The eight stations with the shortest commute (the longer trip or the weighted average, to or from the destinations), as a list. It is plain text, so it works with a screen reader, which the shaded map does not.
 - **Bus freshness.** `meta.json` now carries each bus feed's validity. Choosing Bus adds a note: Rapid KL has been converting low-use routes to on-demand service (19 in January 2026, 10 more in February), on-demand service is not modelled, and the feeder timetable is valid to <date> and city buses to <date>.
 
+### v6: Bahasa Melayu (built)
+- Every visible string lives in `web/src/i18n.ts` (about 220 keys, English and Bahasa Melayu). `t("key", {placeholders})` is used by the app, trip breakdown and train view; static markup uses `data-i18n*` attributes. TypeScript requires both languages to have every key, and a test checks the placeholders match, that nearly everything differs between the two, and that the trip breakdown reads correctly in Malay.
+- A **BM / EN** button in the panel header switches language. The language is chosen from the link (`lang=ms`), then the saved choice, then the browser's language (`ms*`). Switching reloads the page: the link already holds the destinations, options and shortlist, so no state is lost. The link carries `lang=ms`, so a shared link opens in the sender's language.
+- Rapid KL's own wording is used for line names ("Laluan Ampang", "Laluan Monorel KL", "Laluan Pelabuhan Klang") and modes (Monorel). Station names are not translated. Dates use the `ms-MY` locale.
+- The page title, description and `lang` attribute follow the language.
+- The Malay text was written by an AI and needs review by a native speaker. Terms most worth checking: "sela" (gap between trains), "pertukaran" (change), "perhentian" (stop), "e-hailing", "Lembah Klang".
+
 ### Gaps found by the review (not built)
 1. Most of the travel-time model is unchecked: one independent figure caught the Putrajaya Line error; only two lines had published run times to compare.
 2. No reliability or crowding (breakdowns, delays and overcrowding are the common complaints).
 3. Bus data may lag: the city bus feed is dated 2020 to 2027 and still lists two routes the news says changed in October 2026 (T400B, T512B).
 4. Walking is an average factor: no covered walkways, crossings, safety or night-time information.
 5. Drivers are ignored: no driving, park and ride or motorbike comparison.
-6. English only (no Bahasa Melayu); the shaded map has no text alternative beyond the new list.
+6. The shaded map has no text alternative beyond the station list (Bahasa Melayu is now built; the translation needs a native speaker's review).
 7. No commute cost: fares and monthly passes need data not yet found; rent was dropped.
 8. Never tested on a real phone.
 9. The demand for any of this is inferred. Asking five people who are looking for a home would tell more than more features.
 
 ## Later ideas (parking lot, don't build yet)
-- Bahasa Melayu, and a real-phone and screen-reader check
+- A native speaker's review of the Bahasa Melayu text, and a real-phone and screen-reader check
 - Commute cost (fare per trip, monthly pass) once there is a fare data source
 - A disruption or reliability layer if APAD or Prasarana publish usable history
 - Penang and Johor Bahru versions (first check the Klang Valley times against Google Maps)
