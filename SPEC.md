@@ -81,7 +81,7 @@ README.md     what it is, screenshot, how to run locally
 ```
 
 ## Milestones
-Status as of 2026-11-07: all six are built, pushed and deployed, along with v2, v2.1 and v3. One item is still open (marked below).
+Status as of 2026-11-07: all six are built, pushed and deployed, along with v2, v2.1, v3, v3.1 and v4. One item is still open (marked below).
 
 1. **Data sanity check.** Script downloads both feeds, prints the list of routes and station count. Eyeball it: are all expected lines there? Are the station coordinates right? *Done.*
 2. **Matrix.** Compute and save station-to-station times. Spot-check 5 trips against Google Maps or MyRapid PULSE; within ~5 min is fine. *Built; the spot-check against Google Maps / PULSE is still open (the checklist is `docs/VERIFY.md`), and the walk times in `data/transfers.json` are estimates.*
@@ -118,8 +118,8 @@ An animated view of the rail network on the same map, as a second tab next to th
 - A Map / Satellite switch. Map is the OpenFreeMap Bright style with its saturated road colours softened so transit lines and travel-time shading stand out; Satellite is Esri World Imagery under the same place labels (recoloured white with a dark halo). Both are layers of one style, so switching never rebuilds the map or loses the destination, shading or trains. The choice is remembered.
 - A redesigned interface in an Apple-like style: frosted-glass panels, system colours with a blue tint, a type scale in the system font (Inter as the stand-in off Apple devices), iOS-style segmented controls with a sliding thumb, capsule buttons, grouped lists, colour-coded line badges, a bottom sheet with a grabber on phones, and automatic dark mode. Motion respects the reduced-motion setting.
 
-## v3: practicality and trust (built)
-Fixes from a review of the whole app.
+## v3 and v3.1: practicality and trust (built)
+Fixes from a review of the whole app. v3 was the first batch (access modes, shareable links, honest labels, wait fixes, search resilience, data checks, evening and Saturday, ERL in the commute map). v3.1 followed with feeder buses, Sunday, ERL in the train view, walking calibration against real routing, and the base-map fallback. The list below covers both.
 
 - **Getting to a station:** Walk (1.5 km), Feeder bus, or Bike / e-hail (4 km, about 20 km/h plus 4 minutes). Shorter distances are still walked, so the second mode never gives a worse time. This addresses the main impracticality of the train-only map: most of the valley is more than 1.5 km from a station.
 - **Shareable links:** the address bar holds the destination and access mode (`#to=lat,lng&name=...&via=ride`); a shared link opens on it. A "Copy a link" button sits under the legend.
@@ -134,8 +134,17 @@ Fixes from a review of the whole app.
 - **Still to do by a person:** compare the times with Google Maps using [docs/VERIFY.md](docs/VERIFY.md) (no way to query it from the build), and re-check the ERL Transit frequency.
 - **Still not covered:** rents (searched: DOSM publishes household income and expenditure by parliamentary constituency and state-level house price indices, but no rent by area; the rest is paid or scraped listings), buses other than the MRT feeders, late-night timetables, a walking link between Klang's KTM and BRT stops (they are about 3 km apart), and a fallback for satellite imagery. If the OpenFreeMap style cannot be fetched (7 s timeout) the app falls back to plain OpenStreetMap raster tiles with a notice, and everything else works.
 
+## v4: compare two destinations (built)
+For couples (or anyone) with two workplaces.
+
+- Step 1 now has a Destination A / Destination B switch. Search, quick picks, "pick a spot" and pin dragging all change whichever is selected. With B set, the map shades each area by the **longer** of the two trips, so "under 45" means both commutes are under 45 minutes. Everything else (time of day, direction, how you reach a station) applies to both.
+- Two pins (A red, B purple) with labels. Tapping an area shows both trips side by side under "N min for the slower trip", each with its own steps. "Use this spot" fills whichever destination is selected. "Remove destination B" goes back to one.
+- The link carries both (`#to=...&name=...&to2=...&name2=...`), so a couple can share the exact view.
+- Combining is `slowest()` in `web/src/model.ts` over the two per-destination results, so it costs one extra recompute (a few milliseconds).
+- Not included: a weighting (for example 60/40), a "sum of the two" measure, or more than two destinations.
+
 ## Later ideas (parking lot, don't build yet)
-- Add Rapid KL buses and MRT feeder buses
-- "Compare two destinations" mode for couples with different workplaces
-- Overlay rental price data (needs a data source)
-- Penang and Johor Bahru versions
+- Rapid KL city buses (the MRT feeder buses are done; the rest have thousands of stops and bus-to-bus changes)
+- A weighting or "total time" option for two destinations
+- Penang and Johor Bahru versions (first check the Klang Valley times against Google Maps)
+- Rents were dropped: no open dataset, and the listing sites forbid scraping

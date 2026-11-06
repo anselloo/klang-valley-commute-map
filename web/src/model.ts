@@ -94,6 +94,14 @@ export interface Result {
   destStations: { station: number; walk: number; via?: string }[];
 }
 
+/** For two destinations: the longer of the two trips to each hex (Infinity if either cannot be made). */
+export function slowest(results: Result[]): Float64Array {
+  const n = results[0].hexTimes.length;
+  const out = new Float64Array(n);
+  for (let i = 0; i < n; i++) out[i] = Math.max(...results.map((r) => r.hexTimes[i]));
+  return out;
+}
+
 /** The H3 grid of hexes that have at least one station in walking range. */
 export function buildHexes(stations: Station[], access: Access = WALK, feeder: FeederStop[] = []): Hex[] {
   const byId = new Map<string, Hex>();

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { BUS, haversineKm, RIDE, WALK, accessMinutes, buildHexes, compute, type FeederStop } from "./model";
+import { BUS, haversineKm, RIDE, WALK, accessMinutes, buildHexes, compute, slowest, type FeederStop } from "./model";
 import type { Station } from "./types";
 
 const read = <T>(name: string) =>
@@ -189,5 +189,31 @@ describe("feeder buses", () => {
       const w = ids.get(h.id);
       if (w !== undefined) expect(bus.hexTimes[i]).toBeLessThanOrEqual(walk.hexTimes[w] + 1e-9);
     });
+  });
+});
+
+describe("two destinations", () => {
+  const hexes = buildHexes(stations, WALK);
+  const at = (name: string) => {
+    const s = stations.find((x) => x.name === name)!;
+    return compute(stations, matrix, hexes, s.lat, s.lon, WALK);
+  };
+
+  it("takes the longer of the two trips to every hex", () => {
+    const a = at("KL Sentral");
+    const b = at("Kajang");
+    const both = slowest([a, b]);
+    hexes.forEach((_, i) => {
+      expect(both[i]).toBe(Math.max(a.hexTimes[i], b.hexTimes[i]));
+    });
+  });
+
+  it("is never faster than either destination alone, and shrinks the good area", () => {
+    const a = at("KL Sentral");
+    const b = at("Subang Jaya");
+    const both = slowest([a, b]);
+    const under45 = (t: ArrayLike<number>) => Array.from(t as number[]).filter((v) => v < 45).length;
+    expect(under45(both)).toBeLessThanOrEqual(Math.min(under45(a.hexTimes), under45(b.hexTimes)));
+    expect(under45(both)).toBeGreaterThan(0);
   });
 });

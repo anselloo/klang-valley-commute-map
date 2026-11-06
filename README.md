@@ -10,12 +10,12 @@ Live site: https://anselloo.github.io/klang-valley-commute-map/
 
 The site opens on a worked example (KL Sentral) so you can see what it shows straight away. Then:
 
-1. **Choose where you work or study**: search a place, tap a quick pick (KL Sentral, KLCC, Bukit Bintang, Mid Valley, Subang Jaya, Sunway), or choose "pick a spot on the map". You can also drag the pin.
+1. **Choose where you work or study**: search a place, tap a quick pick (KL Sentral, KLCC, Bukit Bintang, Mid Valley, Subang Jaya, Sunway), or choose "pick a spot on the map". You can also drag the pin. **Add a second destination (B)** for a partner's workplace and the map shades each area by the *longer* of the two commutes, so "under 45 minutes" means both are; tapping an area shows both trips.
 2. **Say how you get to a station**: on foot (up to 1.5 km); on foot plus a Rapid KL **feeder bus** (a walk of up to 500 m to a stop whose bus goes to one of the 53 stations that have feeders, with the wait for the bus included); or by bike, scooter or e-hailed car (up to 4 km, about 20 km/h plus 4 minutes to get going). The last two make the map cover far more of the valley, which is closer to how most people commute.
 3. **Choose when, and which way**: weekday morning (the default), weekday evening, Saturday or Sunday, and either the trip *to* your destination or the trip *back* from it. Evening plus "coming back" shows the commute home.
 4. **Read the map**: an H3 hex grid is shaded by total door-to-door travel time to (or from) your destination at the time you chose (under 30 min, 30–45, 45–60, over 60). Uncoloured areas have no station within reach. Tap any coloured area for the trip: walk, wait, each ride with its line and stops, changes, and the final walk.
 
-The address bar always describes the current destination, access mode, time and direction, so **Copy a link to this map** shares exactly what you are looking at. Search looks at station names first (instantly), then Nominatim, then Photon as a backup.
+The address bar always describes the current destination(s), access mode, time and direction, so **Copy a link to this map** shares exactly what you are looking at. Search looks at station names first (instantly), then Nominatim, then Photon as a backup.
 
 A **Map / Satellite** switch (top right) changes the base map without losing your destination or the shading; the choice is remembered. The interface follows your device's light or dark appearance.
 

@@ -213,6 +213,26 @@ await page.click("#when button[data-when='am']");
 await page.click("#access button[data-access='walk']");
 await page.waitForTimeout(1500);
 
+// Two destinations: the map shows the longer of the two trips, and the link carries both.
+await page.click("#slots button[data-slot='1']");
+await page.waitForTimeout(400);
+await page.click("#chips button:nth-child(2)");
+await page.waitForTimeout(2500);
+const two = await text("summary");
+ok("a second destination switches to the slower-commute view", /^Slower commute to .+ and .+, /.test(two), two);
+ok("two pins are shown", (await page.locator(".maplibregl-marker").count()) === 2);
+ok("address carries both destinations", (await page.evaluate(() => location.hash)).includes("to2="));
+const shared2 = await browser.newPage({ viewport: { width: 1200, height: 800 } });
+await shared2.goto(base + "?debug#to=3.13434,101.6862&name=KL%20Sentral&to2=3.15785,101.71165&name2=KLCC", { waitUntil: "load" });
+await shared2.waitForTimeout(5500);
+const s2 = await shared2.evaluate(() => document.getElementById("summary").innerText);
+ok("a shared link with two destinations opens on both", /Slower commute to KL Sentral and KLCC/.test(s2), s2);
+await shared2.close();
+await page.click("#slots button[data-slot='1']");
+await page.click("#remove-b");
+await page.waitForTimeout(2000);
+ok("removing B returns to one destination", /^Train time to /.test(await text("summary")) && !(await page.evaluate(() => location.hash)).includes("to2="), await text("summary"));
+
 // If the base-map style service is down, the app falls back to plain OSM tiles and still works.
 const down = await browser.newPage({ viewport: { width: 1200, height: 800 } });
 await down.route("**/tiles.openfreemap.org/**", (route) => route.abort());

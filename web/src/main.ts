@@ -7,7 +7,7 @@ import "./style.css";
 import { BasemapController, type Basemap } from "./basemap";
 import { breakdownHtml, escapeHtml } from "./breakdown";
 import { RouteFinder, type Graph } from "./graph";
-import { BUS, RIDE, WALK, bandOf, buildHexes, compute, haversineKm, type Access, type FeederStop, type Hex, type Near, type Result } from "./model";
+import { BUS, RIDE, WALK, bandOf, buildHexes, compute, haversineKm, slowest, type Access, type FeederStop, type Hex, type Near, type Result } from "./model";
 import { NetworkView } from "./networkView";
 import type { Station } from "./types";
 
@@ -271,17 +271,29 @@ async function start() {
   }
   basemap.set(saved === "satellite" ? "satellite" : "map");
 
-  let dest: Destination | null = null;
-  let result: Result | null = null;
+  const dests: (Destination | null)[] = [null, null];
+  const results: (Result | null)[] = [null, null];
+  /** Which destination search, quick picks and pin placement change: 0 is A, 1 is B. */
+  let slot = 0;
   let picking = false;
   let mode: "commute" | "network" = "commute";
 
-  const marker = new maplibregl.Marker({ color: "#c0392b", draggable: true });
-  const pinLabel = document.createElement("span");
-  pinLabel.className = "pin-label";
-  pinLabel.textContent = "Destination";
-  marker.getElement().appendChild(pinLabel);
-  marker.getElement().title = "Your destination. Drag to move it.";
+  const PIN_COLORS = ["#c0392b", "#6c3fc5"];
+  const slotName = (i: number) => (i === 0 ? "A" : "B");
+  const shortLabel = (label: string) => (label.length > 24 ? `${label.slice(0, 23)}…` : label);
+  const markers = PIN_COLORS.map((color, i) => {
+    const m = new maplibregl.Marker({ color, draggable: true });
+    const label = document.createElement("span");
+    label.className = "pin-label";
+    label.textContent = "Destination";
+    m.getElement().appendChild(label);
+    m.getElement().title = "Drag to move this destination.";
+    m.on("dragend", () => {
+      const { lng, lat } = m.getLngLat();
+      void setDestination({ lng, lat, label: nearestLabel(lng, lat) }, i);
+    });
+    return m;
+  });
   const breakdownPopup = new maplibregl.Popup({ closeButton: true, maxWidth: "340px", offset: 8 });
 
   function nearestLabel(lng: number, lat: number): string {
@@ -307,12 +319,17 @@ async function start() {
 
   /** Keep the address bar describing the current view, so the link can be shared. */
   function writeHash() {
-    if (!dest) return;
-    const p = new URLSearchParams({ to: `${dest.lat.toFixed(5)},${dest.lng.toFixed(5)}`, name: dest.label });
+    const [a, b] = dests;
+    if (!a) return;
+    const p = new URLSearchParams({ to: `${a.lat.toFixed(5)},${a.lng.toFixed(5)}`, name: a.label });
+    if (b) {
+      p.set("to2", `${b.lat.toFixed(5)},${b.lng.toFixed(5)}`);
+      p.set("name2", b.label);
+    }
     if (access.id !== "walk") p.set("via", access.id);
     if (when !== "am") p.set("when", when);
     if (reverse) p.set("dir", "from");
-    history.replaceState(null, "", `#${p.toString().replace("%2C", ",")}`);
+    history.replaceState(null, "", `#${p.toString().replaceAll("%2C", ",")}`);
   }
 
   function showAccess() {
@@ -372,46 +389,97 @@ async function start() {
     (map.getSource("hexes") as maplibregl.GeoJSONSource).setData(hexFeatures(hexes));
   }
 
+  function showSlots() {
+    document.querySelectorAll<HTMLButtonElement>("#slots button").forEach((b) => {
+      const on = Number(b.dataset.slot) === slot;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+    el("slots").style.setProperty("--i", String(slot));
+    const second = el<HTMLButtonElement>("slots").querySelector<HTMLButtonElement>("button[data-slot='1']")!;
+    second.textContent = dests[1] ? "Destination B" : "Add a second (B)";
+    const d = dests[slot];
+    el("slot-note").textContent = d
+      ? `Choosing destination ${slotName(slot)}: ${d.label}. Search, tap a quick pick, pick a spot or drag its pin to change it.`
+      : slot === 1
+        ? "Choose where your partner works or studies. The map then shows the longer of the two commutes."
+        : "Search, tap a quick pick or pick a spot on the map.";
+    el("remove-b").hidden = !(slot === 1 && dests[1]);
+  }
+
+  function setSlot(next: number) {
+    slot = next;
+    setPicking(false);
+    showSlots();
+    document.querySelectorAll<HTMLButtonElement>("#chips button").forEach((b) => {
+      b.classList.toggle("on", b.dataset.chip === dests[slot]?.chip);
+    });
+    if (slot === 1 && !dests[1]) statusEl.textContent = "Now choose destination B: search, tap a quick pick or pick a spot on the map.";
+  }
+
   async function update() {
-    if (!dest) return;
+    if (!dests.some(Boolean)) return;
     breakdownPopup.remove();
     const matrix = await getMatrix(when);
     const started = performance.now();
-    result = compute(stations, matrix, hexes, dest.lat, dest.lng, access, reverse, feeder);
+    dests.forEach((d, i) => {
+      results[i] = d ? compute(stations, matrix, hexes, d.lat, d.lng, access, reverse, feeder) : null;
+    });
+    const active = results.filter((r): r is Result => r !== null);
+    const times = active.length === 2 ? slowest(active) : active[0].hexTimes;
     hexes.forEach((hex, i) => {
-      map.setFeatureState({ source: "hexes", id: hex.id }, { band: bandOf(result!.hexTimes[i]) });
+      map.setFeatureState({ source: "hexes", id: hex.id }, { band: bandOf(times[i]) });
     });
     console.debug(`recomputed in ${(performance.now() - started).toFixed(1)} ms`);
-    marker.setLngLat([dest.lng, dest.lat]).addTo(map);
-    summaryEl.textContent = `Train time ${reverse ? "from" : "to"} ${dest.label}, ${WHEN[when].label}`;
-    el("legend-title").textContent = reverse
-      ? `Time from ${dest.label} to each area:`
-      : `Time from each area to ${dest.label}:`;
+    const compare = active.length === 2;
+    dests.forEach((d, i) => {
+      if (!d) {
+        markers[i].remove();
+        return;
+      }
+      markers[i].setLngLat([d.lng, d.lat]).addTo(map);
+      markers[i].getElement().querySelector(".pin-label")!.textContent = compare ? `${slotName(i)}: ${shortLabel(d.label)}` : "Destination";
+    });
+    const names = dests.filter((d): d is Destination => d !== null).map((d) => d.label).join(" and ");
+    const dir = reverse ? "from" : "to";
+    summaryEl.textContent = compare
+      ? `Slower commute ${dir} ${names}, ${WHEN[when].label}`
+      : `Train time ${dir} ${names}, ${WHEN[when].label}`;
+    el("legend-title").textContent = compare
+      ? `The longer of the two trips, ${dir} ${names}:`
+      : reverse
+        ? `Time from ${names} to each area:`
+        : `Time from each area to ${names}:`;
+    showSlots();
     document.querySelectorAll<HTMLButtonElement>("#chips button").forEach((b) => {
-      b.classList.toggle("on", b.dataset.chip === dest!.chip);
+      b.classList.toggle("on", b.dataset.chip === dests[slot]?.chip);
     });
     peekEl.textContent = PEEK_TIP;
-    statusEl.textContent = result.destStations.length
-      ? "Tap a coloured area to see how you would get there."
-      : `No station within ${access.reach} of that spot, so nothing is reachable by train from it. Try somewhere closer to a station.`;
+    const stranded = dests.flatMap((d, i) => (d && !results[i]!.destStations.length ? [slotName(i)] : []));
+    statusEl.textContent = stranded.length
+      ? `No station within ${access.reach} of destination ${stranded.join(" or ")}, so nothing is reachable by train from it. Try somewhere closer to a station.`
+      : compare
+        ? "Tap a coloured area to see both trips from there."
+        : "Tap a coloured area to see how you would get there.";
     writeHash();
   }
 
-  function setDestination(d: Destination) {
-    dest = d;
+  function setDestination(d: Destination, i = slot) {
+    dests[i] = d;
+    slot = i;
     setPicking(false);
     if (isPhone()) setCollapsed(true);
     return update();
   }
 
-  async function showBreakdown(hexIdx: number, at: maplibregl.LngLatLike) {
-    if (!result || !dest) return;
+  /** The trip between a hex and destination i: the table of steps and the minutes, or null if there is none. */
+  async function tripFor(i: number, hexIdx: number): Promise<{ html: string; time: number } | null> {
+    const dest = dests[i];
+    const result = results[i];
+    if (!dest || !result) return null;
     const board = result.boardAt[hexIdx];
     const time = result.hexTimes[hexIdx];
-    if (board < 0 || !Number.isFinite(time)) {
-      breakdownPopup.setLngLat(at).setHTML("<strong>No route</strong><br>Not reachable by train from here.").addTo(map);
-      return;
-    }
+    if (board < 0 || !Number.isFinite(time)) return null;
     const alight = result.alightAt[board];
     const minutesOf = (n: Near) => (reverse ? (n.back ?? n.walk) : n.walk);
     const hexLeg = hexes[hexIdx].near.filter((n) => n.station === board).reduce((a, b) => (minutesOf(b) < minutesOf(a) ? b : a));
@@ -425,25 +493,55 @@ async function start() {
     const destVia = busWords(destLeg.via, reverse);
     const finder = await getFinder(when, stations.length);
     const route = reverse ? finder.route(alight, board) : finder.route(board, alight);
-    if (!route) return;
+    if (!route) return null;
     const html = breakdownHtml({
       walkToStation: reverse
         ? { name: stations[alight].name, minutes: walkOut, via: destVia }
         : { name: stations[board].name, minutes: walkIn, via: hexVia },
       route,
-      stationName: (i) => stations[i].name,
+      stationName: (k) => stations[k].name,
       walkToDestination: reverse
         ? { name: "this spot", minutes: walkIn, via: hexVia }
         : { name: dest.label, minutes: walkOut, via: destVia },
       total: time,
       verb: access.verb,
     });
+    return { html, time };
+  }
+
+  async function showBreakdown(hexIdx: number, at: maplibregl.LngLatLike) {
+    const used = [0, 1].filter((i) => dests[i] && results[i]);
+    if (!used.length) return;
+    const trips = await Promise.all(used.map((i) => tripFor(i, hexIdx)));
+    const phrase = (i: number) => (reverse ? `from ${escapeHtml(dests[i]!.label)} to here` : `from here to ${escapeHtml(dests[i]!.label)}`);
+    let body: string;
+    if (used.length === 1) {
+      const t = trips[0];
+      body = t
+        ? `<strong>${Math.round(t.time)} min ${phrase(used[0])}</strong>${t.html}`
+        : "<strong>No route</strong><br>Not reachable by train from here.";
+    } else {
+      const times = trips.map((t) => t?.time ?? Infinity);
+      const worst = Math.max(...times);
+      body = Number.isFinite(worst)
+        ? `<strong>${Math.round(worst)} min for the slower trip</strong>`
+        : "<strong>No route</strong> to one of the destinations from here.";
+      body += used
+        .map((i, k) => {
+          const t = trips[k];
+          const badge = `<span class="slot-badge" style="background:${PIN_COLORS[i]}">${slotName(i)}</span>`;
+          return t
+            ? `<div class="trip-head">${badge}${Math.round(t.time)} min ${phrase(i)}</div>${t.html}`
+            : `<div class="trip-head">${badge}${phrase(i)}</div><p class="small">Not reachable by train from here.</p>`;
+        })
+        .join("");
+    }
+    const target = dests[1] || slot === 1 ? ` as destination ${slotName(slot)}` : " as my destination";
     breakdownPopup
       .setLngLat(at)
       .setHTML(
-        `<strong>${Math.round(time)} min ${reverse ? `from ${escapeHtml(dest.label)} to here` : `from here to ${escapeHtml(dest.label)}`}</strong>${html}` +
-          `<div class="popup-note">${WHEN[when].hours}. Walks and rides to stations are straight-line estimates; waits are half the average gap between trains.</div>` +
-          `<div class="popup-actions"><button type="button" id="set-dest">Use this spot as my destination</button></div>`,
+        `${body}<div class="popup-note">${WHEN[when].hours}. Walks and rides to stations are straight-line estimates; waits are half the average gap between trains.</div>` +
+          `<div class="popup-actions"><button type="button" id="set-dest">Use this spot${target}</button></div>`,
       )
       .addTo(map);
     breakdownPopup.getElement()?.querySelector<HTMLButtonElement>("#set-dest")?.addEventListener("click", () => {
@@ -462,7 +560,7 @@ async function start() {
       void setDestination({ lng: e.lngLat.lng, lat: e.lngLat.lat, label: nearestLabel(e.lngLat.lng, e.lngLat.lat) });
       return;
     }
-    if (!dest || !result) return;
+    if (!dests.some(Boolean)) return;
     const hit = map.queryRenderedFeatures(e.point, { layers: ["hex-fill"] })[0];
     const idx = hit ? hexIndex.get(hit.properties.id as string) : undefined;
     if (idx !== undefined) {
@@ -473,11 +571,16 @@ async function start() {
       if (isPhone()) setCollapsed(false);
     }
   });
-  marker.on("dragend", () => {
-    const { lng, lat } = marker.getLngLat();
-    void setDestination({ lng, lat, label: nearestLabel(lng, lat) });
-  });
   el("pick").addEventListener("click", () => setPicking(!picking));
+  document.querySelectorAll<HTMLButtonElement>("#slots button").forEach((b) => {
+    b.addEventListener("click", () => setSlot(Number(b.dataset.slot)));
+  });
+  el("remove-b").addEventListener("click", () => {
+    dests[1] = null;
+    results[1] = null;
+    setSlot(0);
+    void update();
+  });
 
   // Quick picks: one tap to a common destination.
   const chips = el("chips");
@@ -639,7 +742,7 @@ async function start() {
     if (next === "network") {
       setPicking(false);
       breakdownPopup.remove();
-      marker.remove();
+      markers.forEach((m) => m.remove());
       map.setLayoutProperty("hex-fill", "visibility", "none");
       statusEl.textContent = "";
       if (isPhone()) setCollapsed(true);
@@ -667,7 +770,12 @@ async function start() {
     const name = (hash.get("name") ?? "").slice(0, 80) || nearestLabel(sharedLng, sharedLat);
     map.jumpTo({ center: [sharedLng, sharedLat], zoom: Math.max(map.getZoom(), 10.8) });
     showAccess();
-    await setDestination({ lng: sharedLng, lat: sharedLat, label: name, chip: QUICK_PICKS.find((p) => p.label === name)?.label });
+    await setDestination({ lng: sharedLng, lat: sharedLat, label: name, chip: QUICK_PICKS.find((p) => p.label === name)?.label }, 0);
+    const [lat2, lng2] = (hash.get("to2") ?? "").split(",").map(Number);
+    if (Number.isFinite(lat2) && Number.isFinite(lng2) && inValley(lat2, lng2)) {
+      await setDestination({ lng: lng2, lat: lat2, label: (hash.get("name2") ?? "").slice(0, 80) || nearestLabel(lng2, lat2) }, 1);
+      setSlot(0);
+    }
     setCollapsed(isPhone());
     noteFallback();
     return;
