@@ -4,7 +4,7 @@ Pick where you work or study, and see every part of the Klang Valley you could l
 
 ![Commute map shaded around Subang Jaya, with a trip breakdown open](docs/screenshot.png)
 
-Live site: https://anselloo.github.io/klang-valley-commute-map/ (available once GitHub Pages is switched on, see [Deploying](#deploying)).
+Live site: https://anselloo.github.io/klang-valley-commute-map/
 
 ## What it does
 
@@ -58,7 +58,7 @@ SPEC.md      the v1 spec
 
 ## Deploying
 
-`.github/workflows/deploy.yml` builds and publishes `web/` to GitHub Pages on every push to `main` that touches the site or the data. One-time setup: in the repository, go to **Settings → Pages** and set **Source** to **GitHub Actions**.
+`.github/workflows/deploy.yml` builds and publishes `web/` to GitHub Pages on every push to `main` that touches the site or the data. The repository's **Settings → Pages → Source** must be set to **GitHub Actions** (already done).
 
 `.github/workflows/refresh-data.yml` runs on the 1st of each month, re-downloads the feeds, rebuilds the data, and commits it if anything changed.
 

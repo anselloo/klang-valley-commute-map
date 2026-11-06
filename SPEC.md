@@ -71,14 +71,14 @@ README.md     what it is, screenshot, how to run locally
 ```
 
 ## Milestones
-Status as of 2026-11-06: all six are built and pushed. Two items are still open (marked below).
+Status as of 2026-11-06: all six are built, pushed and deployed. One item is still open (marked below).
 
 1. **Data sanity check.** Script downloads both feeds, prints the list of routes and station count. Eyeball it: are all expected lines there? Are the station coordinates right? *Done.*
 2. **Matrix.** Compute and save station-to-station times. Spot-check 5 trips against Google Maps or MyRapid PULSE; within ~5 min is fine. *Built; the spot-check against Google Maps / PULSE is still open, and the walk times in `data/transfers.json` are estimates.*
 3. **Map.** Base map plus station dots, nothing else. *Done.*
 4. **Isochrone.** Click a point, hexes colour by travel time. *Done.*
 5. **Breakdown popup and arrival-time toggle.** *Breakdown popup done, plus search, quick picks and a first-visit guide. The arrival-time toggle was built and then removed (see "What v1 does").*
-6. **Ship.** Deploy to GitHub Pages, write the README with a screenshot. *Workflows and README are done; GitHub Pages still has to be switched on (Settings → Pages → Source: GitHub Actions).*
+6. **Ship.** Deploy to GitHub Pages, write the README with a screenshot. *Done: deployed to https://anselloo.github.io/klang-valley-commute-map/ with the deploy workflow.*
 
 ## Done when
 - I can click on KL Sentral and on a suburban office location and the shading looks believable to someone who commutes there. *Needs a commuter's judgement.*
