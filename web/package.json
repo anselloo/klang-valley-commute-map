@@ -1,0 +1,23 @@
+{
+  "name": "klang-valley-commute-map-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "predev": "node scripts/copy-data.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/copy-data.mjs",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "node scripts/copy-data.mjs && vitest run"
+  },
+  "dependencies": {
+    "h3-js": "^4.5.0",
+    "maplibre-gl": "^6.16.0"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
+  }
+}
