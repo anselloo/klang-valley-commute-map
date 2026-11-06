@@ -1,0 +1,41 @@
+name: Browser checks
+
+# Drives the built site in a real browser (the same checks as `npm run e2e`). Separate from the deploy
+# so a flaky third-party map tile server never blocks a release; look at it when it goes red.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "data/**"
+      - ".github/workflows/e2e.yml"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install and build
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+      - name: Run the browser checks
+        working-directory: web
+        run: |
+          npx vite preview --port 4173 &
+          npx --yes wait-on http://localhost:4173/ --timeout 30000
+          npm run e2e -- http://localhost:4173/ shots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-screenshots
+          path: web/shots
+          if-no-files-found: ignore
