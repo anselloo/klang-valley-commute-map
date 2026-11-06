@@ -1,0 +1,13 @@
+{
+ "built": "2026-11-06",
+ "feeds": {
+  "prasarana": {
+   "valid_from": "20190101",
+   "valid_to": "20261231"
+  },
+  "ktmb": {
+   "valid_from": "20260818",
+   "valid_to": "20261120"
+  }
+ }
+}

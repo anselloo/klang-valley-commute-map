@@ -1,6 +1,8 @@
 name: Refresh transit data
 
-# Re-downloads the GTFS feeds monthly, rebuilds the matrices and commits them if they changed.
+# Re-downloads the GTFS feeds monthly, rebuilds the matrices, checks them and commits them if they changed.
+# data/meta.json carries the build date, so every run commits: that also keeps the schedule alive (GitHub
+# pauses scheduled workflows in repos with no activity for 60 days).
 on:
   schedule:
     - cron: "0 3 1 * *"
@@ -22,6 +24,8 @@ jobs:
         run: python scripts/build_matrix.py --refresh
       - name: Rebuild the train network data
         run: python scripts/build_network.py
+      - name: Check the new data before publishing it
+        run: python scripts/validate_data.py
       - name: Commit and redeploy if the data changed
         env:
           GH_TOKEN: ${{ github.token }}

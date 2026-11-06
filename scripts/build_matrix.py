@@ -11,7 +11,7 @@ Everything is built for a weekday morning, departing 7:00-9:00.
 
 Cost model:
   * in-vehicle time from stop_times
-  * initial wait   = half the average headway of the line in the window
+  * initial wait   = half the average headway of the line in the window (gaps capped at 40 min)
   * transfer       = half the headway of the next line + 5 min penalty
   * out-of-system walking transfers (data/transfers.json) cost their walk time
     instead of the 5 min penalty
@@ -25,6 +25,7 @@ import re
 import statistics
 import sys
 import zipfile
+from datetime import datetime, timezone
 from collections import defaultdict
 from pathlib import Path
 
@@ -37,6 +38,11 @@ DATA_DIR = ROOT / "data"
 WINDOW = (7 * 60, 9 * 60)
 FALLBACK_PAD = 60  # stops with no departure in the window use the window padded by this much
 TRANSFER_PENALTY = 5.0
+# Infrequent services (some KTM stops have a single train in the window) would otherwise imply
+# waits of an hour or more. Riders of those check the timetable, so cap the average gap used for
+# waiting at 40 minutes, i.e. a 20 minute wait at most.
+MAX_HEADWAY = 40.0
+SERVICE_DAY_MIN = 17 * 60  # 05:00 to 22:00, for stops with no train in the morning window
 
 
 def to_min(t):
@@ -75,6 +81,7 @@ def line_data(feed, zf, route_filter, window):
     edge_samples = defaultdict(lambda: defaultdict(lambda: ([], [])))  # in-window, all
     dep_counts = defaultdict(int)
     dep_counts_wide = defaultdict(int)
+    dep_counts_day = defaultdict(int)  # last resort: any time of day
     freq_headway = {}
 
     for trip_id, trip in trips.items():
@@ -105,6 +112,7 @@ def line_data(feed, zf, route_filter, window):
                 dep = to_min(r["departure_time"])
                 if window_start <= dep < window_end:
                     dep_counts[key] += 1
+                dep_counts_day[key] += 1
                 if window_start - FALLBACK_PAD <= dep < window_end + FALLBACK_PAD:
                     dep_counts_wide[key] += 1
 
@@ -114,6 +122,13 @@ def line_data(feed, zf, route_filter, window):
     for key, n in dep_counts_wide.items():
         if key not in headway:
             headway[key] = (window_end - window_start + 2 * FALLBACK_PAD) / n
+    # A stop with no trains at all in the padded window (some stops are only served the other way
+    # at that hour) still has a service: use the day's average gap rather than making it unusable.
+    for key, n in dep_counts_day.items():
+        if key not in headway:
+            headway[key] = SERVICE_DAY_MIN / n
+
+    headway = {k: min(v, MAX_HEADWAY) for k, v in headway.items()}
 
     edges = defaultdict(dict)
     for line, pairs in edge_samples.items():
@@ -156,6 +171,20 @@ def display_name(name):
         lambda m: m.group(0).upper() if m.group(0).upper() in ACRONYMS else m.group(0).title(),
         name,
     )
+
+
+def write_meta():
+    """data/meta.json: when the data was built and how long each feed's weekday timetable is valid for."""
+    feeds = {}
+    for feed in ("prasarana", "ktmb"):
+        with zipfile.ZipFile(g.FEEDS[feed][1]) as zf:
+            calendar = [r for r in g.read_table(zf, "calendar.txt") if any(r[d] == "1" for d in g.WEEKDAYS)]
+        feeds[feed] = {
+            "valid_from": min((r["start_date"] for r in calendar), default=None),
+            "valid_to": max((r["end_date"] for r in calendar), default=None),
+        }
+    meta = {"built": datetime.now(timezone.utc).strftime("%Y-%m-%d"), "feeds": feeds}
+    (DATA_DIR / "meta.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
 
 
 def main():
@@ -298,6 +327,7 @@ def main():
     matrix, graph = solve(edges, headway)
     (DATA_DIR / "matrix.json").write_text(json.dumps(matrix, separators=(",", ":")), encoding="utf-8")
     (DATA_DIR / "graph.json").write_text(json.dumps(graph, separators=(",", ":")), encoding="utf-8")
+    write_meta()
     unreachable = sum(1 for r in matrix for v in r if v is None)
     size = ((DATA_DIR / "matrix.json").stat().st_size + (DATA_DIR / "graph.json").stat().st_size) // 1024
     print(f"{n} stations, {n * n - n} ordered pairs, {unreachable} unreachable, {size} KB")
