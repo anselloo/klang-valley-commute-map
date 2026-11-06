@@ -1,0 +1,15 @@
+{
+  "_note": "KLIA Ekspres and KLIA Transit (ERL) are not in the Prasarana or KTMB feeds, so they are entered by hand. Stop positions are from OpenStreetMap (ODbL). Ride minutes and headways are approximate figures from ERL's published timetable (KLIA Ekspres: KL Sentral to KLIA 28 min, to klia2 33 min, a train about every 20 minutes; KLIA Transit: to KLIA 36 min, to klia2 39 min, about every 30 minutes) and are worth checking against the current timetable. Stops with a 'join' reuse the position of the existing station of that name, so they become one interchange.",
+  "stops": {
+    "KLS": {"name": "KL Sentral", "join": "KL Sentral"},
+    "BTS": {"name": "Bandar Tasik Selatan", "join": "Bandar Tasik Selatan"},
+    "PJC": {"name": "Putrajaya Sentral", "join": "Putrajaya Sentral"},
+    "SAT": {"name": "Salak Tinggi", "lat": 2.825397, "lon": 101.713075},
+    "KT1": {"name": "KLIA", "lat": 2.754733, "lon": 101.704640},
+    "KT2": {"name": "KLIA2", "lat": 2.744527, "lon": 101.685180}
+  },
+  "lines": [
+    {"name": "KLIA Ekspres", "headway": 20, "stops": ["KLS", "KT1", "KT2"], "minutes": [28, 5]},
+    {"name": "KLIA Transit", "headway": 30, "stops": ["KLS", "BTS", "PJC", "SAT", "KT1", "KT2"], "minutes": [7, 13, 8, 8, 3]}
+  ]
+}

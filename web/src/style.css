@@ -290,3 +290,4 @@ summary { cursor: pointer; color: var(--tint); font-weight: 500; }
 #net-note { margin: 0 0 12px; }
 #when, #dir { margin-top: 8px; }
 #when + #dir { margin-top: 6px; }
+#when { --n: 3; }

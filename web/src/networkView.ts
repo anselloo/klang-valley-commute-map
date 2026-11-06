@@ -80,7 +80,7 @@ function arrowImage(color: string): ImageData {
 }
 
 const NET_NOTE =
-  "Simulated from the published timetable, not live positions. Prasarana trains are spaced by the timetable's average gap, so a real train can be a few minutes off.";
+  "Simulated from the published timetable, not live positions. Prasarana trains are spaced by the timetable's average gap, so a real train can be a few minutes off. KLIA Ekspres and KLIA Transit count in the commute map but are not drawn here.";
 
 /** Seconds since midnight in Kuala Lumpur, whatever timezone the visitor's device is in. */
 function malaysiaNow(): { seconds: number; weekend: boolean } {
@@ -580,7 +580,9 @@ export class NetworkView {
                 `<span class="dep-time">${minutesText(d.inSeconds)}</span></li>`,
             )
             .join("")
-        : `<li class="small">No departures in the next 40 minutes at this time of day.</li>`;
+        : s.lines.every((l) => l.startsWith("KLIA"))
+          ? `<li class="small">Served by KLIA Ekspres and KLIA Transit, which are not drawn in this view.</li>`
+          : `<li class="small">No departures in the next 40 minutes at this time of day.</li>`;
       return {
         peek: deps.length
           ? `${s.name}: ${deps.slice(0, 3).map((d) => `${net.lines[d.line].name} to ${this.stations[d.destination].name} ${minutesText(d.inSeconds)}`).join(", ")}`

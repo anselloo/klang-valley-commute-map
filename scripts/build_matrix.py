@@ -168,7 +168,7 @@ def clean_name(name):
     return re.sub(r"\s*-\s*REDONE$", "", name.strip())
 
 
-ACRONYMS = {"KL", "KLCC", "PWTC", "USJ", "SS", "UKM", "UPM", "UOB", "IOI", "CBP", "SA", "TTDI"}
+ACRONYMS = {"KLIA", "KL", "KLCC", "PWTC", "USJ", "SS", "UKM", "UPM", "UOB", "IOI", "CBP", "SA", "TTDI"}
 
 
 def display_name(name):
@@ -178,6 +178,35 @@ def display_name(name):
         lambda m: m.group(0).upper() if m.group(0).upper() in ACRONYMS else m.group(0).title(),
         name,
     )
+
+
+def add_erl(route_names, edges, headway, stop_rows):
+    """Add KLIA Ekspres / KLIA Transit from data/erl.json (they are in neither GTFS feed).
+
+    Mutates the dicts in place, using the same shapes as line_data. Stops marked "join" take the
+    position of the existing station of that name so they merge into it as an interchange.
+    """
+    cfg = json.loads((DATA_DIR / "erl.json").read_text(encoding="utf-8"))
+    rows = {}
+    for key, s in cfg["stops"].items():
+        if "join" in s:
+            found = [r for r in stop_rows.values()
+                     if clean_name(r["stop_name"]).lower() == s["join"].lower() and not r["stop_id"].startswith("erl")]
+            if not found:
+                sys.exit(f"erl.json: no existing station named {s['join']!r} to join")
+            rows[key] = {"stop_name": found[0]["stop_name"], "stop_lat": found[0]["stop_lat"], "stop_lon": found[0]["stop_lon"]}
+        else:
+            rows[key] = {"stop_name": s["name"], "stop_lat": str(s["lat"]), "stop_lon": str(s["lon"])}
+    for key, row in rows.items():
+        stop_rows[f"erl:{key}"] = {**row, "stop_id": f"erl:{key}"}
+    for line in cfg["lines"]:
+        rkey = "erl:" + line["name"]
+        route_names[rkey] = line["name"]
+        ids = [f"erl:{k}" for k in line["stops"]]
+        for direction, order, gaps in (("0", ids, line["minutes"]), ("1", ids[::-1], line["minutes"][::-1])):
+            edges[(rkey, direction)] = {(a, b): float(m) for (a, b), m in zip(zip(order, order[1:]), gaps)}
+            for stop in order:
+                headway[(rkey, direction, stop)] = float(line["headway"])
 
 
 def write_meta():
@@ -210,10 +239,12 @@ def main():
         edges.update(e)
         headway.update(h)
         stop_rows.update(s)
+    add_erl(route_names, edges, headway, stop_rows)
 
-    # Keep only Klang Valley stops that appear on a line edge.
+    # Keep only Klang Valley stops that appear on a line edge. The airport line runs south of the
+    # box the GTFS stops are limited to, so its stops are always kept.
     used = {s for pairs in edges.values() for pair in pairs for s in pair}
-    valley = {s for s in used if s in stop_rows and g.in_valley(stop_rows[s])}
+    valley = {s for s in used if s in stop_rows and (g.in_valley(stop_rows[s]) or s.startswith("erl:"))}
     cluster_of = cluster_stops({s: stop_rows[s] for s in valley})
 
     # Build stations (one per cluster).
@@ -342,6 +373,7 @@ def main():
                 _, e, h, _ = line_data(feed, zf, filt, window, days)
             e2.update(e)
             h2.update(h)
+        add_erl({}, e2, h2, dict(stop_rows))
         m2, g2 = solve(e2, h2)
         (DATA_DIR / f"matrix{suffix}.json").write_text(json.dumps(m2, separators=(",", ":")), encoding="utf-8")
         (DATA_DIR / f"graph{suffix}.json").write_text(json.dumps(g2, separators=(",", ":")), encoding="utf-8")

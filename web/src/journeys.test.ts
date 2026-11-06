@@ -142,3 +142,16 @@ describe("time of day and direction", () => {
     expect(from.stationTimes[t] - (matrix[k][t] ?? 0)).toBeGreaterThanOrEqual(0);
   });
 });
+
+describe("KLIA Ekspres and Transit", () => {
+  it("reach the airport in about the published time", () => {
+    // KLIA Ekspres: 28 min on the train, plus about 10 min average wait.
+    const t = minutes("KL Sentral", "KLIA");
+    expect(t).toBeGreaterThan(30);
+    expect(t).toBeLessThan(48);
+    expect(minutes("KL Sentral", "KLIA2")).toBeGreaterThan(t);
+  });
+  it("puts the airport stations on the map", () => {
+    for (const name of ["KLIA", "KLIA2", "Salak Tinggi"]) expect(idsOf(name).length, name).toBe(1);
+  });
+});

@@ -117,7 +117,9 @@ Fixes from a review of the whole app.
 - **Search resilience:** station names are matched locally first, results are cached, requests are spaced at least 1.1 s apart, and Photon is tried when Nominatim fails.
 - **Data safety:** `scripts/validate_data.py` runs in the monthly refresh before anything is committed, and fails on a large drop in stations, lines or trips, or on unreachable pairs. Browser checks live in `web/e2e/` and run in CI (`.github/workflows/e2e.yml`). Plausibility tests on real journeys, speeds and symmetry are in `web/src/journeys.test.ts`.
 - **Still to do by a person:** compare the times with Google Maps using [docs/VERIFY.md](docs/VERIFY.md).
-- **Still not covered:** ERL (not in the feeds), feeder buses, weekend/evening timetables, rents. See the caveats in the README.
+- **Time of day and direction:** weekday morning, weekday evening and Saturday, each with its own matrix and graph over the same stations, and a "coming back" direction that reads the matrix the other way round.
+- **KLIA Ekspres / Transit:** added by hand (`data/erl.json`) to the commute map; not drawn in the train view.
+- **Still not covered:** feeder buses and rents (no source), Sunday and late-night timetables, and ERL in the train view. See the caveats in the README.
 
 ## Later ideas (parking lot, don't build yet)
 - Add Rapid KL buses and MRT feeder buses

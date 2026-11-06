@@ -12,7 +12,8 @@ The site opens on a worked example (KL Sentral) so you can see what it shows str
 
 1. **Choose where you work or study**: search a place, tap a quick pick (KL Sentral, KLCC, Bukit Bintang, Mid Valley, Subang Jaya, Sunway), or choose "pick a spot on the map". You can also drag the pin.
 2. **Say how you get to a station**: on foot (up to 1.5 km), or by bike, scooter or e-hailed car (up to 4 km, about 20 km/h plus 4 minutes to get going). The second option makes the map cover far more of the valley, which is closer to how most people commute.
-3. **Read the map**: an H3 hex grid is shaded by total door-to-door travel time to your destination, for a weekday morning commute (under 30 min, 30–45, 45–60, over 60). Uncoloured areas have no station within reach. Tap any coloured area for the trip: walk, wait, each ride with its line and stops, changes, and the final walk.
+3. **Choose when, and which way**: weekday morning (the default), weekday evening or Saturday, and either the trip *to* your destination or the trip *back* from it. Evening plus "coming back" shows the commute home.
+4. **Read the map**: an H3 hex grid is shaded by total door-to-door travel time to your destination, for a weekday morning commute (under 30 min, 30–45, 45–60, over 60). Uncoloured areas have no station within reach. Tap any coloured area for the trip: walk, wait, each ride with its line and stops, changes, and the final walk.
 
 The address bar always describes the current destination and access mode, so **Copy a link to this map** shares exactly what you are looking at. Search looks at station names first (instantly), then Nominatim, then Photon as a backup.
 
@@ -34,7 +35,7 @@ The **Train network** tab shows every train on the weekday timetable moving alon
 - **Tap a station** for its next departures by line and direction, or use it as your destination in the commute view.
 - **Tap a line** (on the map or in the list) to focus on it; the list also shows how many trains each line has running.
 
-Rail only for v1: LRT, MRT, Monorail, BRT Sunway and KTM Komuter. No buses, no real-time data, no backend. See [SPEC.md](SPEC.md).
+Rail only: LRT, MRT, Monorail, BRT Sunway, KTM Komuter and, in the commute map, KLIA Ekspres / KLIA Transit (entered by hand from `data/erl.json`, since they are in neither feed; they are not drawn in the train view). No buses, no real-time data, no backend. See [SPEC.md](SPEC.md).
 
 ## How it works
 
@@ -45,7 +46,7 @@ A Python build step turns the official static GTFS feeds into small JSON files. 
 
 3. **Train network** (`scripts/build_network.py`, `web/src/network.ts`): the build step writes the track geometry and the timetable to `data/network.json`. Prasarana publishes the track shapes and the headway for each part of the day, so its trains are generated from those headways and follow the real track. The KTMB feed has no track shapes, so the Komuter track comes from OpenStreetMap (`scripts/fetch_ktm_geometry.py` saves it to `data/ktm_shapes.json`, which the build reads offline); KTM trains use the feed's real trip times. The browser works out where every train is at the simulated time.
 
-Times are for weekday mornings, using trains that depart 7–9 am. There is no separate 8:00 / 9:00 option: building one for each showed the two differ by about a minute for a typical trip, which is not worth asking a first-time visitor to choose.
+Times use trains departing 7–9 am on a weekday, 5–7:30 pm on a weekday, or 10 am–12 pm on a Saturday; the build writes one matrix per period over the same stations, and the browser loads the one you pick. There is no 8:00 / 9:00 option: it differed by about a minute for a typical trip. "Coming back" reads the matrix the other way round.
 
 ## Run it locally
 
@@ -92,7 +93,7 @@ SPEC.md      the v1 spec
 ## Caveats
 
 - **Estimates, not a journey planner.** Waits are half the average headway (capped at 20 minutes), not a real timetable lookup, and walking ignores roads and rivers. The times have **not** yet been compared with Google Maps; [docs/VERIFY.md](docs/VERIFY.md) is the checklist for doing that.
-- **Not in the data:** KLIA Ekspres / Transit, feeder buses, weekend and evening timetables, and rents. Without them the map answers "how far by train", not "where should I live".
+- **Not in the data:** feeder buses and rents. Without them the map answers "how far by train", not "where should I live". KLIA Ekspres / Transit were added by hand from published figures (`data/erl.json`) and are worth re-checking against ERL's current timetable. Sunday and late-evening timetables are not built.
 - **Free third-party services.** Search (Nominatim, with Photon as a fallback), the base map (OpenFreeMap) and satellite (Esri) are free and come with no guarantee, and heavy traffic could get the site throttled.
 - **Feed gaps show up.** The KTM feed has few trains on some lines (for example the Port Klang line), so some KTM stations look slow. The Kelana Jaya line takes about 98 minutes end to end in the Prasarana feed.
 - **Transfer walk times are guesses.** The walks in `data/transfers.json` are estimates and are worth checking on the ground.

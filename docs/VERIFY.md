@@ -31,6 +31,9 @@ Model figures are station to station (they include the average wait) and come fr
 | Ampang | KLCC | 34 | | LRT then change |
 | Putra Heights | KL Sentral | ~60 | | longest single-line trip |
 | Klang | KL Sentral | ~70 | | KTM Komuter, sparse trains |
+| KL Sentral | KLIA | 38 | | KLIA Ekspres, 28 min ride plus wait |
+| KL Sentral | KLIA2 | 43 | | KLIA Ekspres |
+| Putrajaya Sentral | KLIA | 31 | | KLIA Transit |
 
 ## Known limits of the model (not bugs)
 
@@ -38,10 +41,13 @@ Model figures are station to station (they include the average wait) and come fr
   minutes (`MAX_HEADWAY`), which is optimistic for a missed train and pessimistic for a timed arrival.
 - **Networks that do not connect on foot.** Klang's KTM stations and the Sunway BRT stops can be 3 km
   apart as the crow flies with no walking transfer, so the model routes via KL. Bus links are not modelled.
-- **No ERL (KLIA Ekspres / Transit) and no feeder buses.** They are not in the Prasarana or KTMB feeds
-  used here. "Bike or e-hail" covers the first/last leg to a station but not a bus network.
+- **ERL is hand-entered, and there are no feeder buses.** KLIA Ekspres and KLIA Transit are in neither
+  feed, so `data/erl.json` holds their stops (from OpenStreetMap) and approximate ride times and
+  headways. Check them against ERL's timetable. Buses are not modelled; "Bike or e-hail" covers the
+  first/last leg to a station.
 - **Walking is straight-line x 1.3.** Highways, rivers and missing footbridges can make a real walk
   much longer than the model says.
 - **Prasarana trains are generated from the published headways**, so the train view is a faithful
   picture of the timetable, not of live positions.
-- **Weekday mornings only.** Weekend and evening trips have different timetables.
+- **Three time periods only:** weekday morning, weekday evening and Saturday. Sunday and late-night
+  trips are not built.
