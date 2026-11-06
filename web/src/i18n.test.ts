@@ -51,11 +51,14 @@ describe("translations", () => {
     useLang("en");
     // "tren" for urban rail (Rapid KL's own word), trains "bertolak" (berlepas is for flights),
     // feeder buses are "bas perantara", and errors are "ralat".
-    for (const wrong of ["kereta api", "berlepas", "penyuap", "Sesuatu telah berlaku", "Balik", "Buang ", "Ketik", "ketik"]) {
+    for (const wrong of ["kereta api", "berlepas", "penyuap", "Sesuatu telah berlaku", "Balik", "Ketik", "ketik", "Jeda", "pantas",
+      "ulang-alik", "ulang‑alik", "Alih keluar", "mewarnakan", "sepintas", "selang masa", "hari bekerja"]) {
       expect(all, wrong).not.toContain(wrong);
     }
     expect(all).toContain("tren");
     expect(all).toContain("bas perantara");
+    expect(all).toContain("kekerapan tren");
+    expect(all).toContain("Isnin–Jumaat");
   });
 
   it("fills placeholders", () => {

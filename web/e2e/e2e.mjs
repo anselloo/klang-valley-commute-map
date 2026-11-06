@@ -143,14 +143,21 @@ ok("address carries the destination", /to=3\.\d+,101\.\d+/.test(hash1) && /name=
 // Access mode: bike or e-hail reaches more of the map, and shows in the address.
 const reach = () => page.evaluate(() => window.__map.querySourceFeatures("hexes").length);
 const hexesWalk = await reach();
+/** Poll until the map has redrawn: the source updates a moment after a switch, longer on a busy machine. */
+const until = async (test, ms = 12000) => {
+  for (let waited = 0; waited < ms; waited += 400) {
+    if (test(await reach())) break;
+    await page.waitForTimeout(400);
+  }
+  return reach();
+};
 await page.click("#access button[data-access='ride']");
-await page.waitForTimeout(2500);
-const hexesRide = await reach();
+const hexesRide = await until((n) => n > hexesWalk * 1.3);
 ok("bike/e-hail covers more hexes than walking", hexesRide > hexesWalk * 1.3, `${hexesWalk} -> ${hexesRide}`);
 ok("address records the access mode", (await page.evaluate(() => location.hash)).includes("via=ride"));
 await page.click("#access button[data-access='walk']");
-await page.waitForTimeout(1500);
-ok("switching back to walking restores the smaller area", (await reach()) <= hexesRide * 0.7);
+const hexesBack = await until((n) => n <= hexesRide * 0.7);
+ok("switching back to walking restores the smaller area", hexesBack <= hexesRide * 0.7, `${hexesRide} -> ${hexesBack}`);
 
 // A shared link opens on its destination, with its access mode.
 const shared = await browser.newPage({ viewport: { width: 1200, height: 800 } });
