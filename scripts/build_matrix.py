@@ -201,7 +201,7 @@ def main():
         ss = members[c]
         stations.append({
             "id": f"S{index[c]:03d}",
-            "name": display_name(min((clean_name(stop_rows[s]["stop_name"]) for s in ss), key=len)),
+            "name": display_name(min((clean_name(stop_rows[s]["stop_name"]) for s in ss), key=lambda n: (len(n), n))),
             "lat": round(sum(float(stop_rows[s]["stop_lat"]) for s in ss) / len(ss), 6),
             "lon": round(sum(float(stop_rows[s]["stop_lon"]) for s in ss) / len(ss), 6),
             "lines": sorted(lines_at[c]),
