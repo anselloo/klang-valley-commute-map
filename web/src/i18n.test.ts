@@ -92,8 +92,44 @@ describe("translations", () => {
     expect(html).toContain("Berjalan kaki ke Surian");
     expect(html).toContain("Tunggu KGL");
     expect(html).toContain("Naik KGL: Surian → Muzium Negara (3 stesen)");
-    expect(html).toContain("Naik bas 590, kemudian T453: Muzium Negara → Bukit Dukung");
+    expect(html).toContain("Naik bas 590, kemudian bas T453: Muzium Negara → Bukit Dukung");
     expect(html).toContain("Jumlah");
+  });
+
+  it("names KTM lines in Bahasa Melayu inside the trip breakdown", () => {
+    useLang("ms");
+    const html = breakdownHtml({
+      walkToStation: { name: "Kajang", minutes: 5, via: t("bus.board.many", { r: `T450${t("bus.sep")}T451` }) },
+      route: { total: 30, segments: [{ kind: "ride", line: "Seremban Line", from: 0, to: 1, stops: 1, minutes: 30 }] },
+      stationName: (i) => ["Kajang", "KL Sentral"][i],
+      walkToDestination: { name: "pejabat", minutes: 3, via: t("bus.alight.one", { r: "T789" }) },
+      total: 40,
+    });
+    useLang("en");
+    expect(html).toContain("Berjalan kaki dan naik bas T450, kemudian bas T451 ke Kajang");
+    expect(html).toContain("Naik Laluan Seremban: Kajang → KL Sentral (1 stesen)");
+    expect(html).toContain("Naik bas T789, lalu berjalan kaki ke pejabat");
+  });
+
+  it("joins the pieces of a sentence into grammatical Bahasa Melayu", () => {
+    useLang("ms");
+    const names = `KLCC ${t("names.and")} Mid Valley`;
+    const dir = t("dir.to.word");
+    expect(t("sum.worst", { dir, names, when: t("when.label.am") })).toBe(
+      "Masa perjalanan ke KLCC dan Mid Valley (yang lebih lama), pagi Isnin–Jumaat",
+    );
+    expect(t("legend.worst", { dir, names })).toBe("Masa perjalanan ke KLCC dan Mid Valley (yang lebih lama antara kedua-duanya):");
+    expect(t("status.stranded", { reach: t("reach.bus"), which: `A ${t("or")} B` })).toContain(
+      "Tiada stesen yang dapat dicapai dari destinasi A atau B dengan berjalan kaki sejauh 1.5 km atau menaiki bas, jadi",
+    );
+    expect(t("rank.note.two", { measure: t("rank.measure.worst") })).toContain("kedua-dua destinasi (yang lebih lama), tidak termasuk");
+    expect(t("net.next", { name: "Pasar Seni", when: t("net.in", { when: t("min", { n: 3 }) }) })).toBe(
+      "Stesen seterusnya: <strong>Pasar Seni</strong>, 3 min lagi",
+    );
+    useLang("en");
+    expect(t("net.next", { name: "Pasar Seni", when: t("net.in", { when: t("min", { n: 3 }) }) })).toBe(
+      "Next: <strong>Pasar Seni</strong>, in 3 min",
+    );
   });
 
   it("translates line names the way Rapid KL writes them, and leaves English alone", () => {

@@ -29,6 +29,8 @@ const badge = (name: string, color: string, code?: string) =>
   `<span class="badge" style="background:${color};color:${readableText(color)}">${escapeHtml(lineCode(name, code))}</span>`;
 const minutesText = (seconds: number) =>
   seconds < 30 ? tr("net.now") : seconds < 90 ? tr("net.min1") : tr("min", { n: Math.round(seconds / 60) });
+/** When something happens, as it reads in a sentence: "now" or "in 3 min" ("3 min lagi"). */
+const untilText = (seconds: number) => (seconds < 30 ? tr("net.now") : tr("net.in", { when: minutesText(seconds) }));
 
 /**
  * A round, Apple-Maps-style puck in the line's colour: white ring, soft shadow and a small rounded
@@ -548,11 +550,11 @@ export class NetworkView {
       const dest = this.stations[followed.destination];
       const next = followed.stopped
         ? tr("net.stopped", { name: escapeHtml(stop.name) })
-        : tr("net.next", { name: escapeHtml(stop.name), when: minutesText(followed.secondsToNext) });
+        : tr("net.next", { name: escapeHtml(stop.name), when: untilText(followed.secondsToNext) });
       return {
         peek: followed.stopped
-          ? tr("net.peek.stopped", { line: line.name, dest: dest.name, name: stop.name })
-          : tr("net.peek.next", { line: line.name, dest: dest.name, name: stop.name, when: minutesText(followed.secondsToNext) }),
+          ? tr("net.peek.stopped", { line: lineLabel(line.name), dest: dest.name, name: stop.name })
+          : tr("net.peek.next", { line: lineLabel(line.name), dest: dest.name, name: stop.name, when: untilText(followed.secondsToNext) }),
         html:
           `<div class="card"><div class="card-title">${badge(line.name, line.color, line.code)}` +
           `<span>${lineSuffix(line.name)}${tr("net.to", { name: escapeHtml(dest.name) })}</span></div>` +
@@ -585,7 +587,7 @@ export class NetworkView {
         : `<li class="small">${tr("net.deps.none")}</li>`;
       return {
         peek: deps.length
-          ? `${s.name}: ${deps.slice(0, 3).map((d) => `${net.lines[d.line].name} ${tr("net.to", { name: this.stations[d.destination].name })} ${minutesText(d.inSeconds)}`).join(", ")}`
+          ? `${s.name}: ${deps.slice(0, 3).map((d) => `${lineLabel(net.lines[d.line].name)} ${tr("net.to", { name: this.stations[d.destination].name })} ${untilText(d.inSeconds)}`).join(", ")}`
           : tr("net.peek.nodeps", { name: s.name }),
         html:
           `<div class="card"><div class="card-title"><strong>${escapeHtml(s.name)}</strong></div>` +

@@ -1,5 +1,5 @@
 import type { Route } from "./graph";
-import { t } from "./i18n";
+import { lineLabel, t } from "./i18n";
 
 export interface BreakdownInput {
   walkToStation: { name: string; minutes: number; via?: string };
@@ -26,12 +26,12 @@ export function breakdownHtml(input: BreakdownInput): string {
   rows.push([leg(input.walkToStation), mins(input.walkToStation.minutes)]);
   for (const seg of input.route.segments) {
     if (seg.kind === "wait") {
-      rows.push([t("bd.wait", { line: escapeHtml(seg.line) }), `~${mins(seg.minutes)}`]);
+      rows.push([t("bd.wait", { line: escapeHtml(lineLabel(seg.line)) }), `~${mins(seg.minutes)}`]);
     } else if (seg.kind === "ride") {
       const stops = seg.stops === 1 ? t("bd.stops.one") : t("bd.stops.many", { n: seg.stops });
       rows.push([
         t("bd.ride", {
-          line: escapeHtml(seg.line),
+          line: escapeHtml(lineLabel(seg.line)),
           from: escapeHtml(input.stationName(seg.from)),
           to: escapeHtml(input.stationName(seg.to)),
           stops,
